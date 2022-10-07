@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SP后台</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 100%;
+  }
+</style>
+<body>
+  <div id="app">
+    <el-container >
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "admin/menu.html" %}
+      </el-aside>
+      <el-container >
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="SP后台">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <div>
+              <button @click="toIndex" style="display: inline-block;margin-right: 20px;" class="btn btn-primary">返回前台</button>
+              <form method="post" style="display: inline-block;" action="/loginout">
+                  <button type="submit" class="btn btn-primary">注销</button>
+              </form>
+            </div>
+          </div>
+        </el-header>
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <el-table :data="updateHistory" stripe>
+              <el-table-column prop="pagecommit" label="页面commit id"></el-table-column>
+              <el-table-column prop="admincommit" label="后台commit id"></el-table-column>
+              <el-table-column prop="ctime" label="更新时间" :formatter="timeFormate" width="200px"> </el-table-column>
+              <el-table-column prop="username" label="操作人" width="80px"></el-table-column>
+              <el-table-column prop="name" width="140px" label="项目"></el-table-column>
+              <el-table-column label="操作" width="400px">
+                <template #default="scope">
+                  <el-button type="primary"  :disabled="scope.row.disabled" size="small" @click="update(scope.row.environment,scope.row.name)">更新页面</el-button>
+
+                  <el-button type="warning" :disabled="scope.row.disabled" size="small" @click="dialogFormVisible = true;current_pos = scope.row.environment;current_name=scope.row.name">页面回退</el-button>
+
+                  <el-button type="primary" :disabled="scope.row.disabled" size="small" @click="updateServer(scope.row.environment,scope.row.name)">更新后台</el-button>
+
+                  <el-popconfirm title="重启之前请确认没有上线或者其他操作!!!" @confirm="restart()">
+                    <template #reference>
+                      <el-button type="danger" :disabled="scope.row.disabled" size="small">重启</el-button>
+                    </template>
+                  </el-popconfirm>
+                  <span>&nbsp;&nbsp;</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="状态" width="140px">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.status == 1"  effect="dark">更新或者回退中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 2" type="success"  effect="dark">更新完成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 3" type="warning"  effect="dark">回退完成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 4" type="danger"  effect="dark">操作失败</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+
+          <el-dialog v-model="dialogFormVisible" title="提交 Commit Id">
+            <el-input v-model="commit_id" placeholder="输入commit id" size="small" clearable></el-input>
+            <template #footer>
+              <el-button @click="dialogFormVisible = false;commit_id = '';current_name=''">取消</el-button>
+              <el-button type="primary" :disabled="commit_id == ''" @click="dialogFormVisible = false;back()">确认</el-button>
+            </template>
+          </el-dialog>
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div slot="header">
+              <span>配置服务器</span>
+              <el-button type="primary" size="small" style="margin-left: 20px;" @click="dialogTableVisible = true;">
+                <el-icon>
+                  <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                </el-icon>
+              </el-button>
+            </div>
+            <div class="table-warp">
+            <br>
+            <el-table :data="updateserver" border stripe>
+              <el-table-column prop="sname" label="服务器名" ></el-table-column>
+              <el-table-column prop="ip" label="服务器IP" ></el-table-column>
+              <el-table-column prop="ctime" label="更新时间" :formatter="timeFormate" width="200px"> </el-table-column>
+              <el-table-column prop="username" label="修改人" ></el-table-column>
+              <el-table-column prop="remark" label="备注" width="614px"></el-table-column>
+              <el-table-column label="操作" >
+              <template #default="scope">
+                <el-button type="primary" size="small" @click="modifyServer(scope.row)">修改</el-button>
+              </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+          <el-dialog
+            title="服务器配置"
+            v-model="dialogTableVisible"
+            width="50%">
+            <span>
+              <el-form :model="serverForm" ref="serverForm" label-width="130px" :inline="false" size="normal">
+                <el-form-item label="服务器名">
+                  <el-input v-model="serverForm.sname" placeholder="请输入服务器名"></el-input>
+                </el-form-item>
+                <el-form-item label="服务器IP">
+                  <el-input v-model="serverForm.ip" placeholder="请输入服务器IP"></el-input>
+                </el-form-item>
+                <el-form-item label="备注">
+                  <el-input v-model="serverForm.remark" placeholder="请输入备注"></el-input>
+                </el-form-item>
+              </el-form>
+            </span>
+            <span slot="footer">
+              <el-button @click="closeDialog">Cancel</el-button>
+              <el-button type="primary" @click="addOrSetServer">OK</el-button>
+            </span>
+          </el-dialog>
+        </el-main>
+		
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份
+        "d+": this.getDate(),                    //日
+        "h+": this.getHours(),                   //小时
+        "m+": this.getMinutes(),                 //分
+        "s+": this.getSeconds(),                 //秒
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+        "S": this.getMilliseconds()             //毫秒
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data(){
+        return {
+          current_page: "/admin/",
+          fold: true,
+          commit_id: "",
+          webStatus: false,
+          dialogFormVisible: false,
+          disabled: false,
+          timer: '',
+          current_pos: 0,
+          current_name: "",
+          updateHistory: [],
+          updateserver:[],
+          serverForm: {
+            sname:"",
+            ip:"",
+            id:"",
+            remark:"",
+          },
+          dialogTableVisible: false,
+          isCreate: true,
+        }
+      },
+      mounted() {
+        // 项目名 环境 commitID
+        this.getInfo(),
+		    this.getInfo_server()
+      },
+      methods: {
+        toIndex(){
+          window.location.href = '/';
+        },
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        back(){
+          var environment = this.current_pos;
+          if(environment){
+            if(!this.commit_id){
+              this.$message.error("请输入 commit ID！")
+              return
+            }
+            if(!this.current_name){
+              this.$message.error("未获取到项目信息！")
+              return
+            }
+          }
+          this.disabledname();
+          var form = new FormData();
+          form.append("data", JSON.stringify({
+            name: this.current_name,
+            commit_id: this.commit_id,
+            branch: "main",
+            environment: environment
+          }))
+          this.$message.success("正在执行！")
+          this.postInfo('/admin/rosppage', form, res => {
+            this.disabled = false
+            if(res == "success"){
+              this.$message.success("更新成功！")
+            }else{
+              this.$message.error(res)
+            }
+            this.getInfo()
+          })
+        },
+        // 禁止二次点击
+        disabledname(){
+          this.updateHistory.forEach(item => {
+            if(item.name == this.current_name){
+              item.disabled = true
+            }
+          })
+        },
+        update(pos, name){
+          this.current_name = name;
+          this.disabledname();
+          var form = new FormData();
+          form.append("data", JSON.stringify({
+            name,
+            commit_id: "update",
+            branch: "origin/main",
+            environment: pos
+          }))
+          this.$message.success("正在执行！")
+          this.postInfo('/admin/upsppage', form, res => {
+            this.disabled = false
+            if(res == "success"){
+              this.$message.success("更新页面成功！")
+            }else{
+              this.$message.error(res)
+            }
+            this.getInfo()
+          })
+        },
+        //更新后台
+        updateServer(pos,name){
+          this.current_name = name;
+          this.disabledname();
+          var form = new FormData();
+          // form.append("select", "back")
+          this.getData('/admin/spchange',res =>{
+            if(res == "success"){
+              this.$message.success("更新后台成功！")
+            }else{
+              this.$message.error(res)
+            }
+          })
+          this.getInfo()
+
+        },
+        //重启
+        restart(){
+          var form = new FormData();
+          // form.append("select", "command")
+          this.postInfo('/admin/spreload','',res => {
+            if(res == "success"){
+              this.$message.success("重启成功！")
+              setTimeout(() => {
+              }, 1000);
+            }else{
+              this.$message.warning("任务：" + res.join("、") + "；正在运行，请稍后重启!" )
+            }
+
+          })
+        },
+        getInfo(){
+          var form = new FormData()
+          form.append("table", "adminsp");
+          this.postInfo('/admin/', form, res => {
+            clearTimeout(this.timer);
+            var isReGet = false;
+            if(res){
+              var tmp = JSON.parse(JSON.stringify(res))
+              tmp.forEach(item => {
+                if(item.status == 1){
+                  item.disabled = true
+                  isReGet = true
+                }else{
+                  item.disabled = false
+                }
+                if(!item.name){
+                  item.name = item.platform
+                }
+              })
+              this.updateHistory = tmp
+
+              if(isReGet){
+                this.timer = setTimeout(() => {
+                  this.getInfo()
+                }, 5000);
+              }
+            }
+          })
+        },
+        getInfo_server(){
+          var form = new FormData()
+          form.append("table","server");
+          this.postInfo('/admin/',form,res => {
+            if(res){
+              this.updateserver = res
+            }
+          })
+        },
+        addOrSetServer(){
+          if(this.isCreate){
+            this.addServer()
+          }else{
+            this.setServer()
+          }
+        },
+        modifyServer(row){
+          this.isCreate = false;
+          this.serverForm.ip = row.ip;
+          this.serverForm.id = row.id;
+          this.serverForm.sname = row.sname;
+          this.serverForm.remark = row.remark;
+          this.dialogTableVisible = true;
+        },
+        addServer(){
+          var form = new FormData();
+          form.append("sname", this.serverForm.sname);
+          form.append("ip", this.serverForm.ip);
+          form.append("remark", this.serverForm.remark);
+          this.$message.success("新增请求提交成功！");
+          this.postInfo("/admin/addserver",form,res =>{
+            if(res == "success"){
+              this.$message.success("新增成功!")
+              this.getAllServer();
+              this.closeDialog();
+            }else{
+              this.$message.success("新增失败,请联系管理员!")
+            }
+          })
+        },
+        setServer(){
+          var form = new FormData();
+          form.append("id", this.serverForm.id);
+          form.append("sname", this.serverForm.sname);
+          form.append("ip", this.serverForm.ip);
+          form.append("remark", this.serverForm.remark);
+
+          this.$message.success("修改请求提交成功！")
+          this.postInfo("/admin/editserver", form, res => {
+            if(res == "success"){
+              this.$message.success("修改成功！")
+              this.getAllServer();
+              this.closeDialog()
+            }else{
+              this.$message.success("修改失败，请联系管理员！")
+            }
+          })
+        },
+        getAllServer(){
+          var form = new FormData()
+          form.append("table","server");
+          this.postInfo('/admin/',form,res =>{
+            this.updateserver = res
+          })
+        },
+        clearData(){
+            this.serverForm = {}
+            this.dialogTableVisible = false;
+        },
+        closeDialog(){
+          this.dialogFormVisible = false;
+          this.clearData();
+        },
+        postInfo(url, form, callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+        getData(url,callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "GET",
+            contentType: false,
+            processData: false,
+            success: res => {
+              callback(res)
+            }
+          })
+        }
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

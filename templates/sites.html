@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sites</title>
+  {% include "head.html" %}
+</head>
+<style>
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+</style>
+<body>
+  <div id="app">
+    <el-container :direction="vertical">
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      <el-container :direction="horizontal">
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="站点管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main height="">
+          <el-card shadow="always">
+            <div slot="header">
+              <span>请选择生成的站点</span>
+            </div>
+            <div>
+              <el-checkbox-group v-model="sites">
+                {% for k in project_list %}
+                <el-checkbox label="{{k}}">{{k}}</el-checkbox>
+                {% endfor %}
+              </el-checkbox-group>
+              <br/>
+              <el-button :disabled="sites.length <= 0" type="primary" size="default" @click="submitSite">提交</el-button>
+            </div>
+          </el-card>
+          <br/>
+          <el-card shadow="always" :body-style="{ padding: '10px' }">
+            <el-table :data="uploadData" style="width: 100%" @selection-change="handleSelectionChange" size="small" :default-sort="{ prop: 'ctime', order: 'descending' }">
+              <el-table-column type="selection" :selectable="checkIsSelect" width="55"></el-table-column>
+              <el-table-column prop="name" label="项目" >
+                <template #default="scope">
+                  <!--{% raw %}-->
+                  <el-link type="primary" :href="'https://' + scope.row.zone" target="_blank">{{scope.row.zone}}</el-link>
+                  <!--{% endraw %}-->
+                </template>
+              </el-table-column>
+              <el-table-column label="测试链接">
+                <template #default="scope">
+                  <!--{% raw %}-->
+                  <el-link type="primary" :href="scope.row.url + `${scope.row.zonePath}.sp.com`" target="_blank">{{scope.row.url + `${scope.row.zonePath}.sp.com`}}</el-link>
+                  <!--{% endraw %}-->
+                  <div style="width: 110px;display: inline-block">
+                    <el-select
+                      v-model="scope.row.zonePath"
+                      filterable
+                      placeholder="选择站点"
+                    >
+                      <el-option
+                        v-for="item in scope.row.zoneList"
+                        :key="item.site + scope.row.zoneinfo_id"
+                        :label="item.chname"
+                        :value="item.site"
+                      >
+                      </el-option>
+                    </el-select>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" label="状态" width="140">
+                <template #default="scope">
+                  <el-tag v-if="!scope.row.status" size="default" type="info"  effect="dark">站点生成中</el-tag>
+                  <template v-else-if="scope.row.status == 1 && scope.row.lock == 1">
+                    <div style="width: 100%;overflow: hidden">
+                      <div style="float: left">
+                        <el-tag size="default" type="info"  effect="dark">站点上线中</el-tag>
+                      </div>
+                      <div style="float: left;height:24px;margin-left: 5px">
+                        <el-progress type="circle" width="24" stroke-width="3" :percentage="scope.row.percent" :show-text="false" />
+                      </div>
+                    </div>
+                  </template>
+                  <el-tag v-else-if="scope.row.status == 2 && scope.row.lock == 1" size="default" type="info"  effect="dark">站点回退中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 1" size="default"  effect="dark">站点已生成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 2" type="success" size="default"  effect="dark">上线完成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 3" type="warning" size="default"  effect="dark">回退成功</el-tag>
+                  <el-tag v-else-if="scope.row.status == 4" type="warning" size="default"  effect="dark">生成失败</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="user" label="操作人" width="100"></el-table-column>
+              <el-table-column prop="ctime" label="时间" width="160"></el-table-column>
+            </el-table>
+            <br/>
+            <el-button :disabled="selectionUpload.length <= 0" type="primary" size="default" @click="upload">上线</el-button>
+          </el-card>
+      
+          <br/>
+          <el-card shadow="always" :body-style="{ padding: '10px' }">
+            <el-table :data="backData" style="width: 100%" size="small" :default-sort="{ prop: 'ctime', order: 'descending' }">
+              <el-table-column prop="name" label="项目" >
+                <template #default="scope">
+                  <!--{% raw %}-->
+                  <el-link type="primary" :href="'https://' + scope.row.zone" target="_blank">{{scope.row.zone}}</el-link>
+                  <!--{% endraw %}-->
+                </template>
+              </el-table-column>
+              <el-table-column label="测试链接">
+                <template #default="scope">
+                  <!--{% raw %}-->
+                  <el-link type="primary" :href="scope.row.url + 'us.sp.com'" target="_blank">{{scope.row.url + 'us.sp.com'}}</el-link>
+                  <!--{% endraw %}-->
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" label="状态" width="180">
+                <template #default="scope">
+                  <el-tag v-if="!scope.row.status" size="default" type="info"  effect="dark">站点生成中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 1 && scope.row.lock == 1" size="default" type="info"  effect="dark">站点上线中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 2 && scope.row.lock == 1" size="default" type="info"  effect="dark">站点回退中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 1" size="default"  effect="dark">站点已生成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 2" type="success" size="default"  effect="dark">上线完成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 3" type="warning" size="default"  effect="dark">回退成功</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="user" label="操作人" width="200"></el-table-column>
+              <el-table-column prop="ctime" label="时间" width="300"></el-table-column>
+              <el-table-column label="操作" width="100">
+                <template #default="scope">
+                  <el-button v-if="scope.row.rolback && scope.row.status == 2 && !scope.row.lock" :disabled="scope.row.lock" type="danger" size="default" @click="back(scope.row.name)">回退</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-main>
+      </el-container>
+    </el-container>
+    
+  </div>
+  <script>
+    const App = {
+      data(){
+        return {
+          current_page: "/sites/",
+          sites: [],
+          uploadData: [],
+          backData: [],
+          fold: true,
+          selectionUpload: [],
+          findStatusProject: [
+            {% for k in project_list %}
+              "{{k}}",
+            {% endfor %}
+          ],
+        }
+      },
+      mounted() {
+        this.getStatus()
+      },
+      methods: {
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        submitSite(){
+          this.$notify({
+            message: "生成提交成功，请等待生成，将自动刷新页面...",
+            type: "success",
+            title: "成功"
+          })
+          var form = new FormData()
+          this.sites.forEach(element => {
+            form.append("project", element)
+            this.uploadData.forEach(x => {
+              if(x.name == element){
+                x.status = 0
+              }
+            })
+          });
+          // 生成站点
+          this.postInfo('/sites/create', form, () => {
+            
+          })
+          this.sites = []
+          setTimeout(() => {
+            this.getStatus()
+          }, 1000);
+        },
+        checkIsSelect(row, index){
+          return !(row.lock || !row.status || row.status == 2 || !row.forbiden)
+        },
+        handleSelectionChange(rows){
+          this.selectionUpload = rows.map(item => item.name)
+        },
+        upload(){
+          var form = new FormData()
+          this.selectionUpload.forEach(element => {
+            form.append("projectname", element)
+            this.uploadData.forEach(x => {
+              if(x.name == element){
+                x.lock = 1
+              }
+            })
+          });
+          form.append("lock", 1)
+          // 上线
+          this.postInfo('/sites/upload', form, () => {
+            setTimeout(() => {
+              this.$notify({
+                message: "上线申请成功，请等待上线，将自动刷新页面...",
+                type: "success",
+                title: "成功"
+              })
+              this.getStatus()
+            }, 100);
+          })
+        },
+        back(name){
+          var form = new FormData()
+          this.backData.forEach(element => {
+            if(element.name == name){
+              element.lock = 1;
+            }
+          });
+          form.append("name", name)
+          form.append("lock", 1)
+          // 回退
+          this.postInfo('/sites/roback', form, () => {
+            setTimeout(() => {
+              this.$notify({
+                title: "成功",
+                message: "回退提交成功，请等待回退成功，将自动刷新页面...",
+                type: "success"
+              })
+              this.getStatus()
+            }, 100);
+          })
+          
+        },
+        postInfo(url, form, callback){
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+        getStatus(data){
+          var form = new FormData()
+          this.findStatusProject.forEach(element => {
+            form.append("project", element)
+          });
+          // 查询所有的站点
+          $.ajax({
+            "url": '/sites/',
+            "method": "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success:async result => {
+              result.forEach(ele => {
+                var date = new Date(ele.ctime + '+0800')
+                ele.ctime = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+              })
+              this.uploadData = result.filter(item => item.rolback != 1 && item.status != 2 && item.status != 3);
+              for(let i = 0;i < this.uploadData.length;i++){
+                await $.post('/sites/',{
+                  zoneinfo_id:this.uploadData[i].zoneinfo_id
+                },res => {
+                  this.uploadData[i].zoneList = res;
+                  this.uploadData[i].zonePath = res[0].site;
+                })
+              }
+              console.log(this.uploadData);
+              this.backData = result.filter(item => {
+                var item_time = new Date(item.ctime);
+                var current_time = new Date();
+                return !(item.rolback != 1 && item.status != 2 && item.status != 3) && item_time.getDate() == current_time.getDate() && item_time.getMonth() == current_time.getMonth() && item_time.getFullYear() == current_time.getFullYear()
+              });
+              var nextUpdate = result.filter(item => item.lock || !item.status)
+              if(nextUpdate.length){
+                setTimeout(() => {
+                  return this.getStatus()
+                }, 10000);
+              }
+            }
+          })
+        }
+      },
+      
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

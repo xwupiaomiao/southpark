@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  {% include "head.html" %}
+</head>
+<style>
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    margin-left: 20px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .el-select.el-select--default {
+    width: 130px !important;
+  }
+  .desktop{
+    display: grid;
+    grid-template-columns: 50% 50%;
+    width: 100%;
+    height: 184px;
+    margin: 20px;
+    background-image: url("/static/image/layout.png");
+    background-position: center;
+    background-size: 100% auto;
+    background-repeat: no-repeat;
+  }
+  .no-show{
+    opacity: 0;
+  }
+  .location{
+    position: relative;
+    text-align: center;
+  }
+  .username{
+    position: absolute;
+  }
+  .is-white{
+    padding: 4px 9px;
+    background-color: white;
+  }
+  .top-info{
+    bottom: 10px;
+    transform: translate(1px, 0);
+  }
+  .bottom-info{
+    top: 10px;
+    transform: translate(1px, 0);
+  }
+  .left-info{
+    right: 40%;
+    transform: translate(50%, 0);
+  }
+  .right-info{
+    left: 40%;
+    transform: translate(-50%, 0);
+  }
+  .layout{
+    width: 100%;
+    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(6, 15%);
+  }
+  .table-warp{
+    height: calc(100vh - 270px);
+  }
+</style>
+
+<body>
+  <script>
+    window.addEventListener("resize", resetDesktopSize)
+    function resetDesktopSize(){
+      var allDesktop = document.getElementsByClassName("desktop");
+      for(var i = 0; i < allDesktop.length; i++){
+        const ele = allDesktop[i]
+        ele.style.height = ele.clientWidth + "px"
+      }
+    }
+    window.addEventListener("load", resetDesktopSize)
+  </script>
+  <div id="app">
+    <el-container>
+      {% if logins %}
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      {% endif %}
+      <el-container>
+        {% if logins %}
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="首页">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path fill="currentColor"
+                      d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z">
+                    </path>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path fill="currentColor"
+                      d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z">
+                    </path>
+                  </svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <div>
+              <button @click="toAdmin" style="display: inline-block;" class="btn btn-primary">前往后台</button>
+              <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+              </form>
+            </div>
+          </div>
+        </el-header>
+        {% endif %}
+        {% if not logins %}
+        <el-header height="56px">
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '5px' }">
+            <div style="display: flex;justify-content: end;padding-right: 5%;">
+              <el-button class="btn btn-primary" type="primary" size="default" @click="login">登陆</el-button>
+              <el-button class="btn btn-primary" type="primary" size="default" @click="toChangePassword">修改密码</el-button>
+              <el-button class="btn btn-primary" type="primary" size="default" @click="toNas">登陆群晖</el-button>
+              <el-button class="btn btn-primary" type="primary" size="default" @click="toSql">登陆数据库</el-button>
+              <el-button class="btn btn-primary" type="primary" size="default" @click="toJenkins">登陆Jenkins</el-button>
+              <el-button class="btn btn-primary" type="primary" size="default" @click="toGitLab">登陆GitLab</el-button>
+            </div>
+          </el-card>
+        </el-header>
+        {% endif %}
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <el-tabs tab-position="top" v-model="activeName" @tab-click="changeInfo">
+              <el-tab-pane label="座位图" name="layout">
+                <el-card shadow="always" :body-style="{ padding: '20px',height: 'calc(100vh - 260px)',overflow: 'scroll'}">
+                  <div class="layout" v-for="po in position">
+                    <!--{% raw %}-->
+                    <div v-for="item in po" :class="item.length > 0 ? 'desktop' : 'desktop no-show'" >
+                      <div class="location" v-if="item.length" v-for="loc in 4">
+                        <span :class="[loc == 1 || loc == 2 ? 'top-info':'bottom-info', loc == 1 || loc == 3 ? 'left-info':'right-info', 'username']" v-for="user in item" >
+                          <el-tooltip content="" placement="bottom" effect="light" v-if="user.location == loc && user.status == 1">
+                            <template #content>
+                              &#12288;&#12288;岗位： {{user.name}}
+                              <br/>
+                              &#12288;手机号： {{user.mobile}}
+                              <br/>
+                              工作职责： {{user.remark}}
+                            </template>
+                            <el-tag size="large" :class="loc == user.location ? '':'no-show'" :type="user.status == 1 ? 'primary':'danger'"  effect="dark">{{ user.location == loc ? user.chinesename : "" }}</el-tag>
+                          </el-tooltip>
+                          
+                        </span>
+                      </div>
+                    </div>
+                    <!--{% endraw %}-->
+                  </div>
+                </el-card>
+              </el-tab-pane>
+              <el-tab-pane label="上线日志" name="uploadlog">
+                <div class="table-warp">
+                  <el-table v-loading="nginxIsLoad" height="100%" :data="currentList" style="width: 100%" size="small">
+                    <el-table-column prop="proname" label="项目名称">
+                      <template #default="scope">
+                        <!--{% raw %}-->
+                        <el-tag type="primary">{{scope.row.proname}}</el-tag>
+                        <!--{% endraw %}-->
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="username" label="上线人"></el-table-column>
+                    <el-table-column prop="ctime" label="时间" :formatter="timeFormate"></el-table-column>
+                    <el-table-column label="状态">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.stat == 1" type="success" size="default" effect="dark">上线完成</el-tag>
+                        <el-tag v-if="scope.row.stat == 2" type="danger" size="default" effect="dark">回退成功</el-tag>
+                        <el-tag v-if="scope.row.stat == 3" type="success" size="default" effect="dark">脚本执行完成</el-tag>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="脚本日志" name="scriptlog">
+                <div class="table-warp">
+                  <el-table v-loading="nginxIsLoad" height="100%" :data="currentList" style="width: 100%" size="small">
+                    <el-table-column prop="proname" label="项目名称">
+                      <template #default="scope">
+                        <!--{% raw %}-->
+                        <el-link v-if="scope.row.stat != 3" type="primary"
+                                 :href="'https://' + scope.row.proname + scope.row.org" target="_blank">
+                          {{scope.row.proname}}{{scope.row.org}}</el-link>
+                        <el-link v-else type="primary">{{scope.row.proname}}</el-link>
+                        <!--{% endraw %}-->
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="username" label="上线人"></el-table-column>
+                    <el-table-column prop="ctime" label="时间" :formatter="timeFormate"></el-table-column>
+                    <el-table-column label="状态">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.stat == 1" type="success" size="default" effect="dark">上线完成</el-tag>
+                        <el-tag v-if="scope.row.stat == 2" type="danger" size="default" effect="dark">回退成功</el-tag>
+                        <el-tag v-if="scope.row.stat == 3" type="success" size="default" effect="dark">脚本执行完成</el-tag>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="Git日志" name="gamelog">
+                <div class="table-warp">
+                  <el-table v-loading="nginxIsLoad" height="100%" :data="currentList" stripe>
+                    <el-table-column prop="project" width="200px" label="项目"></el-table-column>
+                    <el-table-column label="环境" width="80px">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.environment == 1" type="danger" size="default" effect="dark">正式</el-tag>
+                        <el-tag v-else-if="scope.row.environment == 0" type="success" size="default" effect="dark">测试
+                        </el-tag>
+                        <el-tag v-else-if="scope.row.environment == 2" size="default" effect="dark">工程</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="commit_id" label="commit id"></el-table-column>
+                    <el-table-column prop="ctime" label="更新时间" :formatter="timeFormate"  width="300px"> </el-table-column>
+                    <el-table-column prop="username" width="80px" label="操作人"></el-table-column>
+                    <el-table-column label="状态" width="100px">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.status == 1" size="default" effect="dark">更新或者回退中</el-tag>
+                        <el-tag v-else-if="scope.row.status == 2" type="success" size="default" effect="dark">更新完成</el-tag>
+                        <el-tag v-else-if="scope.row.status == 3" type="warning" size="default" effect="dark">回退完成</el-tag>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="视频数据" name="video">
+                <div class="table-warp">
+                  <el-table v-loading="nginxIsLoad" height="100%" :data="currentList" style="width: 100%" size="small">
+                    <el-table-column prop="id" label="ID" width="50"></el-table-column>
+                    <el-table-column prop="title" label="标题" width="300"></el-table-column>
+                    <el-table-column prop="tag" label="标签" width="500"></el-table-column>
+                    <el-table-column prop="category" label="分类" width="300"></el-table-column>
+                    <!--                  <el-table-column prop="description" label="详情" width="100"></el-table-column>-->
+                    <el-table-column label="预览链接" width="200">
+                      <template #default="scope">
+                        <!--{% raw %}-->
+                        <el-link type="primary" :href="scope.row.testurl" target="_blank">{{scope.row.testurl}}</el-link>
+                        <!--{% endraw %}-->
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="ctime" label="时间" :formatter="timeFormate" width="150"></el-table-column>
+                    <el-table-column prop="username" label="上传人" width="100"></el-table-column>
+                    <el-table-column prop="status" label="状态" width="100">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.status == 1" size="default" effect="dark">正在压缩</el-tag>
+                        <el-tag v-else-if="scope.row.status == 2" type="success" size="default" effect="dark">上传到云端中
+                        </el-tag>
+                        <el-tag v-else-if="scope.row.status == 3" type="warning" size="default" effect="dark">已上传</el-tag>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+
+              </el-tab-pane>
+              <el-tab-pane label="nginx日志" name="nginxlog">
+                <br />
+                <el-input style="width: 20%;min-width: 350px;" v-model="searchProject"
+                  @keyup.enter.native="getNginxInfo" placeholder="根据项目或者IP搜索">
+                  <template #prepend>
+                    <el-select v-model="selectSite" placeholder="Site" style="width: 110px">
+                      {% for k in site_all %}
+                      <el-option label="{{k.site}}:{{k.chname}}" value="{{k.site}}"></el-option>
+                      {% endfor %}
+                    </el-select>
+                  </template>
+                  <template #append>
+                    <el-button type="primary" @click="getNginxInfo">搜索</el-button>
+                  </template>
+                </el-input>
+                <br />
+                <br />
+                <div class="table-warp" style="height: calc(100vh - 330px);">
+                  <el-table :data="currentList" v-loading="nginxIsLoad" height="100%" style="width: 100%" size="small">
+                    <el-table-column prop="site" label="站点" width="50px"></el-table-column>
+                    <el-table-column prop="remote_addr" label="Remote Addr" width="150px"></el-table-column>
+                    <el-table-column prop="time_local" label="时间" :formatter="timeFormate" width="200px"></el-table-column>
+                    <el-table-column prop="request_url" label="请求链接"></el-table-column>
+                    <el-table-column prop="http_referer" label="请求来源"></el-table-column>
+                    <el-table-column prop="http_ua" label="用户代理"></el-table-column>
+                    <el-table-column prop="project" label="项目" width="100px"></el-table-column>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="域名日志" name="domain">
+                <div class="table-warp">
+                  <el-table :data="currentList" height="100%" v-loading="nginxIsLoad" style="width: 100%" size="small">
+                    <el-table-column label="域名" width="300px">
+                      <template #default="scope">
+                        <!--{% raw %}-->
+                        <el-link type="primary" :underline="false" :href="'https://' + scope.row.url" target="_blank">
+                          {{scope.row.url}}</el-link>
+                        <!--{% endraw %}-->
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="site" label="站点" width="40px"></el-table-column>
+                    <el-table-column prop="username" label="添加人" width="100px"></el-table-column>
+                    <el-table-column prop="ctime" label="时间" :formatter="timeFormate" width="200px"></el-table-column>
+                    <el-table-column label="信息">
+                      <template #default="scope">
+                        <p v-html="scope.row.message"></p>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="状态" width="200px">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.status == 1" type="danger" size="default" effect="dark">Nginx配置异常，请联系管理员
+                        </el-tag>
+                        <el-tag v-else-if="scope.row.status == 2" type="danger" size="default" effect="dark">CDN配置异常，请联系管理员
+                        </el-tag>
+                        <el-tag v-else-if="scope.row.status == 3" type="success" size="default" effect="dark">配置完成</el-tag>
+                        <el-tag v-else-if="scope.row.status == 4" size="default" effect="dark">正在配置</el-tag>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="广告日志" name="advertlog">
+                <div class="table-warp">
+                  <el-table :data="currentList" height="100%" v-loading="nginxIsLoad" style="width: 100%" size="small" height="80vh">
+                    <el-table-column prop="username" label="姓名"></el-table-column>
+                    <el-table-column prop="project" label="项目"></el-table-column>
+                    <el-table-column prop="ctime" label="操作时间" :formatter="timeFormate" ></el-table-column>
+                    <el-table-column label="状态">
+                      <template #default="scope">
+                        <el-tag v-if="scope.row.status == 1" type="info" size="default" effect="dark">
+                          运行中</el-tag>
+                        <el-tag v-if="scope.row.status == 2" type="success" size="default" effect="dark">
+                          已完成</el-tag>
+                        <el-tag v-if="scope.row.status == 3" type="danger" size="default" effect="dark">
+                          错误</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="脚本">
+                      <template #default="scope">
+                        <p v-html="scope.row.msg"
+                           style="display: block;height: 200px;width: 160px;overflow-x: hidden;word-wrap: break-word;"></p>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+            <br>
+            <el-pagination background current-page="pageIndex" @current-change="changeIndex" layout="prev, pager, next"
+              :page-size="pagenum" :total="total">
+            </el-pagination>
+          </el-card>
+
+        </el-main>
+      </el-container>
+    </el-container>
+
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份 
+        "d+": this.getDate(),                    //日 
+        "h+": this.getHours(),                   //小时 
+        "m+": this.getMinutes(),                 //分 
+        "s+": this.getSeconds(),                 //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data() {
+        return {
+          sites: [],
+          total: 0,
+          current_page: '/',
+          fold: true,
+          searchProject: '',
+          selectSite: '',
+          nginxIsLoad: false,
+          activeName: "layout",
+          uploadList: [],
+          scriptList: [],
+          videoList: [],
+          gameList: [],
+          nginxList: [],
+          domainList: [],
+          currentList: [],
+          pagenum: 30,
+          pageIndex: 1,
+          otherSite: {
+            "tv": ['toyplay', 'playtoys']
+          },
+          position: [],
+          layoutPosition: [
+            [1, 2, 3, 0, 4, 5],
+            [6, 7, 0, 0, 0, 8],
+            [0, 0, 0, 0, 0, 9],
+          ]
+        }
+      },
+      mounted() {
+        this.changeInfo();
+        this.layoutResize();
+      },
+      methods: {
+        toAdmin(){
+          window.location.href = "/admin/";
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        login() {
+          window.location.href = "/login";
+        },
+        toChangePassword() {
+          window.open("/chpwd");
+        },
+        toNas() {
+          window.open("/nas");
+        },
+        toSql() {
+          window.open("/sql");
+        },
+        toJenkins() {
+          window.open("http://jenkins.sp.com");
+        },
+        toGitLab(){
+          window.open("http://gitlab.sp.com");
+        },
+        clickMenu(index) {
+          if (window.location.pathname != index) {
+            window.location.href = index
+          }
+        },
+        openMenu() {
+          this.fold = !this.fold
+        },
+        changeIndex(index) {
+          this.pageIndex = index;
+          this.getNginxInfo();
+        },
+        layoutResize(){
+          setTimeout(() => {
+              var allDesktop = document.getElementsByClassName("desktop");
+              for(var i = 0; i < allDesktop.length; i++){
+                const ele = allDesktop[i]
+                ele.style.height = ele.clientWidth + "px"
+              }
+            }, 200);
+        },
+        changeInfo(tab, event) {
+          if(this.activeName == "layout"){
+            this.layoutResize()
+          }
+          var form = new FormData()
+          form.append("table", this.activeName);
+          this.pageIndex = 1;
+          this.getInfo(form)
+        },
+        getNginxInfo() {
+          var form = new FormData()
+          form.append("table", this.activeName)
+          form.append("project", this.searchProject.replace(/\s/g, ''))
+          form.append("site", this.selectSite)
+          this.getInfo(form)
+        },
+        getInfo(form) {
+          this.nginxIsLoad = true;
+          setTimeout(() => {
+            this.postInfo("/", form, res => {
+              this.total = res[1].total;
+              this.nginxIsLoad = false;
+              this.currentList = res[0];
+              console.log(res[0])
+              if(this.activeName == "layout"){
+                var tmp = []
+                this.layoutPosition.forEach(pos => {
+                  var thisLine = []
+                  pos.forEach(desk => {
+                    var tmpOneDesk = []
+                    if(desk != 0){
+                      res[0].forEach(all => {
+                        if(all.desk == desk){
+                          all.ctime = all.ctime ? all.ctime : "";
+                          all.user = all.user ? all.user : "空";
+                          if(all.ctime){
+                            all.ctime = new Date(all.ctime + " +0800").format("yyyy-MM-dd")
+                          }
+                          tmpOneDesk.push(all)
+                        }
+                      })
+                    }else{
+                      tmpOneDesk = []
+                    }
+                    thisLine.push(tmpOneDesk)
+                  })
+                  tmp.push(thisLine)
+
+                })
+                this.position = tmp
+                this.layoutResize()
+                console.log(res)
+                console.log(this.position)
+
+              }
+            })
+          }, 200);
+        },
+        postInfo(url, form, callback) {
+          this.disabled = true
+          form.append("page", this.pageIndex);
+          form.append("total", this.pagenum);
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              res.forEach(ele => {
+                if (this.activeName == 'uploadinfo') {
+                  for (var key in this.otherSite) {
+                    if (this.otherSite[key].indexOf(`${ele.proname}`) != -1) {
+                      ele.org = '.' + key
+                    }
+                  }
+                  if (!ele.org) {
+                    ele.org = '.com'
+                  }
+                }
+              })
+              callback(res)
+            }
+          })
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+
+</html>

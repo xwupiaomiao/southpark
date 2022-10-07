@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz</title>
+<!--  <script src="/static/js/jq.js"></script>-->
+<!--  &lt;!&ndash; 导入样式 &ndash;&gt;-->
+<!--  <link rel="stylesheet" href="/static/css/element.css"/>-->
+<!--  &lt;!&ndash; 导入 Vue 3 &ndash;&gt;-->
+<!--  <script src="/static/js/vue.js"></script>-->
+<!--  &lt;!&ndash; 导入组件库 &ndash;&gt;-->
+<!--  <script src="/static/js/element.js"></script>-->
+<!--  <link rel="shortcut icon" href="/static/image/favicon.ico" type="image/x-icon">-->
+<!--  <script src="/static/js/sortable.js"></script>-->
+<!--  <script src="/static/js/drag.js"></script>-->
+  {% include "head.html" %}
+</head>
+<style>
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .upload-demo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .el-upload-list {
+    width: 100%;
+  }
+
+  .attr-Upload {
+    width: 100px;
+    height: 100px;
+    border-radius: 5px;
+    border: 1px dashed #d9d9d9;
+    background: url("/static/image/add.png") no-repeat;
+    background-position: 50% 50%;
+    background-size: 20px 20px;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .attr-Upload label {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .attr-Upload img {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .attr-Upload:hover {
+    border: 1px dashed #409EFF;
+    background: url("/static/image/add_blue.png") no-repeat;
+    background-position: 50% 50%;
+    background-size: 20px 20px;
+  }
+
+  .ids-list {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .ids-item {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #666666;
+    line-height: 40px;
+    text-align: center;
+    margin: 0 5px;
+    cursor: pointer;
+  }
+  .table-warp{
+    height: calc(100vh - 300px);
+  }
+  .el-table .el-table__cell {
+    z-index:unset !important;
+  }
+</style>
+
+<body>
+<div id="app">
+  <el-container>
+    <el-aside :width="fold ? '200px' : '60px'">
+      {% include "menu.html" %}
+    </el-aside>
+    <!--{% raw %}-->
+    <el-container>
+      <el-header height="56px" style="display: flex;align-items: center;">
+        <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+          <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="问答管理">
+            <template #icon>
+              <el-icon>
+                <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path>
+                </svg>
+              </el-icon>
+            </template>
+          </el-page-header>
+          <form method="post" style="display: inline-block;" action="/loginout">
+            <button type="submit" class="btn btn-primary">注销</button>
+          </form>
+        </div>
+      </el-header>
+      <el-main>
+        <el-row style="margin-bottom: 10px;">
+          <el-col :span="24">
+            <el-radio-group v-model="nowSite"size="large" @change="siteChange">
+              <el-radio-button label="Shark Quiz"></el-radio-button>
+              <el-radio-button label="Quiz Nanny"></el-radio-button>
+            </el-radio-group>
+          </el-col>
+        </el-row>
+        <el-card>
+          <!--        <p>问答管理</p>-->
+          <!-- 题库页 -->
+          <template v-if="!detailID">
+            <el-row>
+              <el-col :span="10">
+                <el-radio-group v-model="openID" @change="changeShow">
+                  <el-radio-button label="套题库"></el-radio-button>
+                  <el-radio-button label="问题库"></el-radio-button>
+                </el-radio-group>
+              </el-col>
+              <el-col :span="14">
+                <div v-if="openID=='套题库'" style="text-align: right">
+                  <el-row>
+                    <el-col :span="3" :offset="3">
+                      <el-select v-model="search_type" class="m-2" placeholder="Select" clearable>
+                        <el-option :label="标题" value="title"></el-option>
+                        <el-option :label="网页名称" value="url"></el-option>
+                      </el-select>
+                    </el-col>
+                    <el-col :span="16">
+                      <el-input v-model="search_content" placeholder="搜索"/>
+                    </el-col>
+                    <el-col :span="2">
+                      <el-button @click="openAddTopic()">上传套题</el-button>
+                    </el-col>
+                  </el-row>
+                </div>
+                <!--                <el-button v-if="openID!='套题库'" @click="openUpdateQuestion()">新增</el-button>-->
+              </el-col>
+            </el-row>
+            <div v-if="openID == '套题库'">
+              <div class="table-warp">
+                <el-table ref="topicList" :data="topicList" v-loading="loading" style="margin: 20px auto" tooltip-effect="light" height="100%">
+                  <!--            <el-table-column prop="id" label="id"></el-table-column>-->
+                  <el-table-column prop="title" label="标题"></el-table-column>
+                  <el-table-column prop="url" label="页面名称"></el-table-column>
+                  <!--          <el-table-column prop="question_ids" label=""></el-table-column>-->
+                  <el-table-column prop="series" label="系列"></el-table-column>
+                  <el-table-column prop="category" label="类别"></el-table-column>
+                  <el-table-column prop="cover" label="封面">
+                    <template #default="scope">
+                      <el-image v-if="scope.row.cover_name" style="height: 60px" :src='"http://image.sp.com/" + imgUrl + scope.row.cover_name'
+                                :preview-src-list="['http://image.sp.com/' + imgUrl + scope.row.cover_name]">
+                        <div slot="error" class="image-slot">
+                          <i class="el-icon-picture-outline"></i>
+                        </div>
+                      </el-image>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="tag" label="标签"></el-table-column>
+                  <el-table-column prop="desc" label="描述" show-overflow-tooltip></el-table-column>
+                  <el-table-column prop="update_time" label="更新时间"></el-table-column>
+                  <el-table-column label="操作">
+                    <template #default="scope">
+                      <el-button @click="openDetail(scope.row.id)">详情</el-button>
+                      <el-button type="warning" @click="openEditTopic(scope.row)">编辑</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
+              <el-pagination
+                background
+                :current-page="page"
+                @current-change="changeCurrentPage"
+                layout="prev, pager, next"
+                :page-size="pageSize"
+                :total="total">
+              </el-pagination>
+            </div>
+            <div v-else>
+              <div class="table-warp">
+                <el-table ref="questionList" :data="questionList" v-loading="loading" style="margin: 20px auto" height="100%">
+                  <!--            <el-table-column prop="id" label="id"></el-table-column>-->
+                  <el-table-column prop="title" label="标题"></el-table-column>
+                  <el-table-column prop="answer" label="答案"></el-table-column>
+                  <el-table-column label="正确答案图片">
+                    <template #default="scope">
+<!--                      <img v-if="scope.row.a_cover" :src="'data:image/png;base64,' + scope.row.a_cover"-->
+<!--                           style="width: 70px;height: 70px">-->
+<!--                      <p v-else>-</p>-->
+                      <el-image v-if="scope.row.a_cover_url" style="height: 60px" :src="'http://image.sp.com/'+ imgUrl + scope.row.a_cover_url"
+                                :preview-src-list="['http://image.sp.com/'+ imgUrl + scope.row.a_cover_url]">
+                        <div slot="error" class="image-slot">
+                          <i class="el-icon-picture-outline"></i>
+                        </div>
+                      </el-image>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="错误答案图片">
+                    <template #default="scope">
+<!--                      <img v-if="scope.row.b_cover" :src="'data:image/png;base64,' + scope.row.b_cover"-->
+<!--                           style="width: 70px;height: 70px">-->
+<!--                      <p v-else>-</p>-->
+                      <el-image v-if="scope.row.b_cover_url" style="height: 60px" :src="'http://image.sp.com/'+ imgUrl + scope.row.b_cover_url"
+                                :preview-src-list="['http://image.sp.com/'+ imgUrl + scope.row.b_cover_url]">
+                        <div slot="error" class="image-slot">
+                          <i class="el-icon-picture-outline"></i>
+                        </div>
+                      </el-image>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="题目状态">
+                    <template #default="scope">
+                      <el-tag v-if="scope.row.topic_id" type="success" size="small">已使用</el-tag>
+                      <el-tag v-else type="success" size="small">未使用</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="create_time" label="创建时间"></el-table-column>
+                  <el-table-column prop="update_time" label="更新时间"></el-table-column>
+<!--                  <el-table-column label="操作" fixed="right">-->
+<!--                    <template #default="scope">-->
+<!--                      <el-button>详情</el-button>-->
+<!--                    </template>-->
+<!--                  </el-table-column>-->
+                </el-table>
+
+              </div>
+              <el-row>
+                <el-pagination
+                  background
+                  :current-page="page"
+                  @current-change="changeCurrentPage"
+                  layout="prev, pager, next"
+                  :page-size="pageSize2"
+                  :total="total">
+                </el-pagination>
+              </el-row>
+            </div>
+          </template>
+          <!-- 套题详情页 -->
+          <template v-else>
+            <el-row>
+              <el-col :span="6">
+                <div @click="detailID=false">< 返回</div>
+              </el-col>
+              <el-col :span="18">
+                <div style="text-align: right">
+                  <el-button @click="openUpdateQuestion()">新增</el-button>
+                  <el-button @click="openSort()">排序</el-button>
+                </div>
+              </el-col>
+            </el-row>
+            <div class="table-warp">
+              <el-table ref="topicQuestionList" :data="topicQuestionList" style="margin: 20px auto" height="100%">
+                <el-table-column prop="id" label="id"></el-table-column>
+                <el-table-column prop="title" label="标题"></el-table-column>
+                <el-table-column label="正确答案图片">
+                  <template #default="scope">
+<!--                    <img v-if="scope.row.a_cover" :src="'data:image/png;base64,' + scope.row.a_cover"-->
+<!--                         style="width: 50px;height: 50px">-->
+<!--                    <p v-else>-</p>-->
+                    <el-image v-if="scope.row.a_cover_url" style="height: 60px" :src="'http://image.sp.com/' + imgUrl + scope.row.a_cover_url"
+                              :preview-src-list="['http://image.sp.com/'+ imgUrl + scope.row.a_cover_url]">
+                      <div slot="error" class="image-slot">
+                        <i class="el-icon-picture-outline"></i>
+                      </div>
+                    </el-image>
+                  </template>
+                </el-table-column>
+                <el-table-column label="错误答案图片">
+                  <template #default="scope">
+<!--                    <img v-if="scope.row.b_cover" :src="'data:image/png;base64,' + scope.row.b_cover"-->
+<!--                         style="width: 50px;height: 50px">-->
+<!--                    <p v-else>-</p>-->
+                    <el-image v-if="scope.row.b_cover_url" style="height: 60px" :src="'http://image.sp.com/'+ imgUrl + scope.row.b_cover_url"
+                              :preview-src-list="['http://image.sp.com/'+ imgUrl + scope.row.b_cover_url]">
+                      <div slot="error" class="image-slot">
+                        <i class="el-icon-picture-outline"></i>
+                      </div>
+                    </el-image>
+                  </template>
+                </el-table-column>
+                <el-table-column label="题目状态">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.topic_id" type="success" size="small">已使用</el-tag>
+                    <el-tag v-else type="success" size="small">未使用</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="create_time" label="创建时间"></el-table-column>
+                <el-table-column prop="update_time" label="更新时间"></el-table-column>
+                <el-table-column label="操作" fixed="right">
+                  <template #default="scope">
+                    <el-button @click="openUpdateQuestion(scope.row)">编辑</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </template>
+          <el-dialog title="上传套题" v-model="openID5" width="400px">
+            <div v-if="openID5" v-loading="loading2">
+              <div>
+                <el-upload
+                  class="upload-demo"
+                  drag
+                  :auto-upload="false"
+                  :on-change="changeFile"
+                  action="#"
+                  accept=".zip"
+                  :limit="1"
+                  multiple
+                >
+                  <el-icon class="el-icon--upload">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                      <path
+                        d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z"></path>
+                      <!--                   <path fill="currentColor" d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z"></path>-->
+                    </svg>
+                  </el-icon>
+                  <div class="el-upload__text">
+                    Drop file here or <em>click to upload</em>
+                  </div>
+                  <template #tip>
+                    <div class="el-upload__tip">
+                      只允许上传zip包
+                    </div>
+                  </template>
+                </el-upload>
+              </div>
+              <div style="margin-top: 10px;text-align: center">
+                <el-button @click="openID5=false">取消</el-button>
+                <el-button type="primary" @click="generateTopicAndQuestions()">确认上传</el-button>
+              </div>
+            </div>
+          </el-dialog>
+          <el-dialog title="编辑套题信息" v-model="openID2" @close="closeTopic">
+            <el-form label-width="180px">
+              <el-form-item label="标题">
+                <el-input v-model="topicInfo.title" placeholder="请输入标题"/>
+              </el-form-item>
+              <el-form-item label="描述">
+                <el-input v-model="topicInfo.desc" placeholder="请输入标题"/>
+              </el-form-item>
+              <el-form-item label="标签">
+                <el-input v-model="topicInfo.tag" placeholder="请输入标签"/>
+              </el-form-item>
+              <el-form-item label="封面：">
+                <div class="attr-Upload" @dragover="fileDragover" @drop="fileDrop2">
+                  <label for="topic_cover">
+                    <input type="file" ref="referenceUpload" @change="uploadImg2($event)" id="topic_cover">
+                  </label>
+                  <img v-if="topicInfo.cover_name" :src="topicInfo.cover_name">
+                  <p style="font-size: 12px;color: #999999;position: absolute;
+              bottom: -41px;width: 118px;left: -4px;">（点击图片可修改）</p>
+                </div>
+              </el-form-item>
+            </el-form>
+            <div style="text-align: center">
+              <el-button @click="openID2=false">取消</el-button>
+              <el-button @click="updateQuizTopic" type="primary">确定</el-button>
+            </div>
+          </el-dialog>
+          <el-dialog title="排序" v-model="openID4" width="30%" draggable>
+            <div class="ids-list">
+              <draggable v-model="topicQuestionIds" v-bind="dragOptions"
+                         tag="transition-group">
+                <template #item="{element,index}">
+                  <div class="ids-item">{{ element }}</div>
+                </template>
+              </draggable>
+            </div>
+            <div style="text-align: center;margin-top: 10px">
+              <el-button type="primary" @click="changeQuizQuestionids">确定</el-button>
+              <el-button @click="openID4 = false">取消</el-button>
+            </div>
+          </el-dialog>
+          <el-dialog :title="questionForm.id?'编辑题目':'新增题目'" v-model="openID3" @close="closeQuestion">
+            <div v-loading="loading2">
+              <el-form ref="formRef" label-width="180px">
+                <el-form-item label="标题：">
+                  <el-input v-model="questionForm.title" placeholder="请输入标题"/>
+                </el-form-item>
+                <el-form-item label="cover_a：">
+                  <div class="attr-Upload" @dragover="fileDragover" @drop="fileDrop($event,'a_cover')">
+                    <label for="a_cover">
+                      <input type="file" ref="aImg" @change="uploadImg($event,'a_cover')" id="a_cover">
+                    </label>
+                    <img v-if="questionForm.a_cover_url" :src="questionForm.a_cover_url">
+                    <p style="font-size: 12px;color: #999999;position: absolute;
+              bottom: -41px;width: 118px;left: -4px;">（点击图片可修改）</p>
+                  </div>
+                </el-form-item>
+                <el-form-item label="cover_b：">
+                  <div class="attr-Upload" @dragover="fileDragover" @drop="fileDrop($event,'b_cover')">
+                    <label for="b_cover">
+                      <input type="file" ref="bImg" @change="uploadImg($event,'b_cover')" id="b_cover">
+                    </label>
+                    <img v-if="questionForm.b_cover_url" :src="questionForm.b_cover_url">
+                    <p style="font-size: 12px;color: #999999;position: absolute;
+              bottom: -41px;width: 118px;left: -4px;">（点击图片可修改）</p>
+                  </div>
+                </el-form-item>
+              </el-form>
+              <div style="text-align: center">
+                <el-button @click="openID3=false">取消</el-button>
+                <el-button @click="updateQuestion">确定</el-button>
+              </div>
+            </div>
+          </el-dialog>
+        </el-card>
+      </el-main>
+    </el-container>
+    <!--{% endraw %}-->
+  </el-container>
+</div>
+<!--<script src="static/js/Sortable.min.js"></script>-->
+<script>
+  var development = true;
+  var localhost = 'http://api.sp.com/v1'
+  //
+  // var localhost = 'http://192.168.137.223:8080/v1'
+  function url(siteUrl,url) {
+    if (development) {
+      return localhost + siteUrl + url;
+    } else {
+      return url;
+    }
+  }
+
+  const draggable = window['vuedraggable'];
+
+  const App = {
+    components: {
+      'draggable': draggable,
+    },
+    data() {
+      return {
+        current_page: "/quiz",
+        fold: true,
+        loading: false,
+        loading2:false,
+        openID: '套题库',
+        openID2: false,  //控制编辑套题弹窗
+        openID3: false, //控制编辑题目弹窗
+        openID4: false,  //控制排序弹窗
+        openID5: false,  //控制套题信息编辑弹窗
+        detailID: false, //true展示套题详情页
+        page: 1,
+        pageSize: 15,
+        pageSize2: 20,
+        total: 0,
+        topicList: [],
+        id: null,
+        questionList: [],
+        formData: {  //编辑套题窗口数据
+          id: null,
+          title: null,
+          page_name: null,
+          series: null,
+          category: null,
+          cover: null,
+        },
+        topicQuestionList: [],  //套题题目列表
+        questionForm: {
+          topic_id: null,
+          id: null,
+          title: null,
+          a_cover: null,
+          a_cover: null,
+        },
+        topicId: null,
+        topicQuestionIds: [],  //套题题目顺序
+        topicInfo: {
+          id: null,
+          title: null,
+          desc: null,
+          tag: null,
+          cover: null,
+        },
+        fileData:null,
+        search_type:'',
+        search_content:null,
+        timer:null,
+        timer2:null,
+        nowSite: 'Shark Quiz',
+        siteUrl: "/quiz",
+        imgUrl : 'sharkquiz/'
+      }
+    },
+    watch:{
+      search_content(){
+        clearTimeout(this.timer);
+        this.timer =setTimeout(() => {
+          this.getQuizTopic();
+        },500)
+      },
+      search_type(){
+        this.search_content = null;
+      }
+    },
+    computed: {
+      dragOptions() {
+        return {
+          animation: 200,
+          group: "description",
+          disabled: false,
+          ghostClass: "ghost"
+        };
+      },
+    },
+    mounted() {
+      this.getQuizTopic();
+      this.getQuizQuestions();
+    },
+    methods: {
+      //站转换
+      siteChange(){
+        this.detailID = false
+        this.page = 1;
+        if(this.nowSite == 'Shark Quiz'){
+          //改变路径
+          this.siteUrl = '/quiz';
+          this.imgUrl = 'sharkquiz/';
+          //重新获取数据
+          this.getQuizTopic();
+          this.getQuizQuestions();
+        }else {
+          //改变路径
+          this.siteUrl = '/nanny';
+          this.imgUrl = 'quiznanny/';
+          //重新获取数据
+          this.getQuizTopic();
+          this.getQuizQuestions();
+        }
+
+      },
+      closeTopic(){
+        for(let k in this.topicInfo){
+          this.topicInfo[k] = null;
+        }
+      },
+      closeQuestion(){
+        for(let k in this.questionForm){
+          this.questionForm[k] = null;
+        }
+      },
+      //上传套题
+      generateTopicAndQuestions(){
+        this.loading2 = true;
+        var formdata = new FormData()
+        formdata.append("gen_file", this.fileData)
+        $.ajax({
+          url: url(this.siteUrl,'/generate_topic_and_questions'),
+          method: "POST",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.loading2 = false;
+            this.openID5 = false;
+            this.$message.success(res);
+            this.getQuizTopic();
+            this.getQuizQuestions();
+          },
+          error: err => {
+            this.loading2 = false;
+            this.$message.error(err.responseJSON.detail);
+            console.log(err);
+          }
+        })
+      },
+      //上传套题文件拖动后操作
+      changeFile(file) {
+        console.log(file.raw);
+        this.fileData = file.raw;
+      },
+      //编辑套题信息
+      updateQuizTopic() {
+        let form = new FormData();
+        form.append('id',this.topicInfo.id)
+        form.append('title',this.topicInfo.title)
+        form.append('desc',this.topicInfo.desc)
+        form.append('tag',this.topicInfo.tag)
+        if(this.topicInfo.cover){
+          form.append('cover',this.topicInfo.cover)
+        }
+        console.log(form)
+        $.ajax({
+          url: url(this.siteUrl,'/update_quiz_topic'),
+          method: "POST",
+          contentType: false,
+          processData: false,
+          "data": form,
+          success: res => {
+            console.log(res);
+            if (res.msg){
+              this.$message.success(res.msg);
+              this.openID2 = false;
+              this.getQuizTopic();
+            } else {
+              this.$message.error(res.detail);
+            }
+          },
+          error: err => {
+            // this.loading2 = false;
+            // this.$message.error(err.responseJSON.detail);
+            // console.log(err);
+          }
+        })
+      },
+      //打开套题编辑窗口
+      openEditTopic(data) {
+        this.openID2 = true;
+        this.topicInfo = {
+          id: data.id,
+          title: data.title,
+          desc: data.desc,
+          tag: data.tag,
+          cover_name: "http://image.sp.com/" + this.imgUrl + data.cover_name,
+          cover : null,
+        }
+        console.log(this.topicInfo.cover)
+      },
+      //上传图片-套题换封面用
+      uploadImg2(e) { 
+        let img = e.target.files[0];
+        this.topicInfo.cover = img; 
+        let reader = new FileReader();
+        reader.readAsDataURL(img);
+        reader.onloadend = (e) => {
+          if (reader.result) {
+            this.topicInfo.cover_name = reader.result;
+          }
+        }
+        this.$refs.referenceUpload.value = null; //采用@change时如果选择相同图片时不会被触发，这里手动清空input的vaule值
+        console.log(this.topicInfo.cover_name)
+      },
+      fileDrop2(e) {
+        e.preventDefault();
+        // const file = e.dataTransfer.files[0] // 获取到第一个上传的文件对象
+        let img = e.dataTransfer.files[0];
+        this.topicInfo.cover = img;
+        console.log(this.topicInfo.cover)
+        let reader = new FileReader();
+        reader.onloadend = (e) => {
+          if (reader.result) {
+            this.topicInfo.cover_name = reader.result;
+          }
+        }
+        reader.readAsDataURL(img);
+      },
+      //打开上传套题弹窗
+      openAddTopic(data) {
+        this.openID5 = true;
+        this.fileData = null;
+      },
+      //打开排序弹窗
+      openSort() {
+        this.topicQuestionIds = this.topicQuestionList.map(item => {
+          return item.id;
+        })
+        this.openID4 = true;
+      },
+      //提交套题题目顺序修改
+      changeQuizQuestionids() {
+        $.post(url(this.siteUrl,"change_quiz_questionids"), {
+          id: this.topicId,
+          question_ids: JSON.stringify(this.topicQuestionIds).slice(1, -1)
+        }, res => {
+          console.log(res);
+          this.$message.success(res);
+          this.getQuestionByTpid();
+          this.openID4 = false;
+        })
+      },
+      //更新题目信息
+      updateQuestion() {
+        // this.questionForm = {
+        //   topic_id: this.topicId,
+        //   id: data.id,
+        //   title: data.title,
+        //   a_cover_url: "http://image.sp.com/sharkquiz/" + data.a_cover_url,
+        //   b_cover_url:"http://image.sp.com/sharkquiz/" + data.b_cover_url,
+        //   a_cover: null,
+        //   b_cover: null,
+        // };
+        this.loading2 = true;
+        let form = new FormData();
+        form.append('topic_id',this.questionForm.topic_id)
+        form.append('id',this.questionForm.id)
+        form.append('title',this.questionForm.title)
+        if(this.questionForm.a_cover_file){
+          form.append('a_cover',this.questionForm.a_cover_file)
+        }
+        if(this.questionForm.b_cover_file){
+          form.append('b_cover',this.questionForm.b_cover_file)
+        }
+        $.ajax({
+          url: url(this.siteUrl,'/update_question'),
+          method: "POST",
+          contentType: false,
+          processData: false,
+          "data": form,
+          success: res => {
+            if (res.msg) {
+              if (this.questionForm.topic_id) {
+                this.getQuestionByTpid();
+              } else {
+                this.getQuizQuestions();
+              }
+              this.openID3 = false;
+              this.$message.success(res.msg);
+            } else {
+              this.$message.error(res.detail);
+            }
+            this.loading2 = false;
+          },
+          error: err => {
+            // this.loading2 = false;
+            // this.$message.error(err.responseJSON.detail);
+            // console.log(err);
+          }
+        })
+      },
+      //上传图片-题目用
+      uploadImg(e, key) {
+        let img = e.target.files[0];
+        this.questionForm[key+'_file'] = img;
+        let reader = new FileReader();
+        reader.onloadend = (e) => {
+          if (reader.result) {
+            this.questionForm[key+'_url'] = reader.result;
+          }
+        }
+        reader.readAsDataURL(img);
+        this.$refs.aImg.value = null;
+        this.$refs.bImg.value = null; 
+      },
+      fileDragover(e) {
+        e.preventDefault();
+      },
+      fileDrop(e,key) {
+        e.preventDefault();
+        // const file = e.dataTransfer.files[0] // 获取到第一个上传的文件对象
+        let img = e.dataTransfer.files[0];
+        let reader = new FileReader();
+        reader.onloadend = (e) => {
+          if (reader.result) {
+            this.questionForm[key] = reader.result;
+          }
+        }
+        reader.readAsDataURL(img);
+      },
+      //打开题目编辑窗口
+      openUpdateQuestion(data) {
+        console.log(data);
+        //有data为编辑，无data为新增
+        if (data) {
+          this.questionForm = {
+            topic_id: this.topicId,
+            id: data.id,
+            title: data.title,
+            a_cover_url: "http://image.sp.com/" + this.imgUrl + data.a_cover_url,
+            b_cover_url: "http://image.sp.com/" + this.imgUrl + data.b_cover_url,
+            a_cover: null,
+            b_cover: null,
+          };
+        } else {
+          this.questionForm = {
+            topic_id: this.topicId,
+            id: null,
+            title: null,
+            a_cover: null,
+            b_cover: null,
+          };
+        }
+        this.openID3 = true;
+        console.log(this.questionForm)
+      },
+      //打开套题详情页
+      openDetail(id) {
+        this.detailID = true;
+        this.topicId = id;
+        this.getQuestionByTpid();
+      },
+      //获取套题的题目列表
+      getQuestionByTpid() {
+        $.get(url(this.siteUrl,"/get_questions_by_tpid"), {
+          id: this.topicId,
+        }, res => {
+          this.topicQuestionList = res;
+        })
+      },
+      //切换展示
+      changeShow() {
+        this.page = 1;
+        this.topicId = null;
+        // if (this.openID == '套题库') {
+        //   this.getQuizTopic();
+        // } else {
+        //   this.getQuizQuestions();
+        // }
+      },
+      //获取题目列表数据
+      getQuizQuestions() {
+        $.get(url(this.siteUrl,"/get_quiz_questions"), {
+          page: this.page,
+          offset: this.pageSize2,
+        }, res => {
+          this.loading = false;
+          this.total = res.total;
+          this.questionList = res.data;
+          console.log(res.total)
+        })
+      },
+      //翻页
+      changeCurrentPage(page) {
+        this.page = page;
+        if (this.openID == '套题库') {
+          this.getQuizTopic();
+        } else {
+          this.getQuizQuestions();
+        }
+      },
+      //获取套题列表数据
+      getQuizTopic() {
+        this.loading = true;
+        $.get(url(this.siteUrl,"/get_quiz_topic"), {
+          page: this.page,
+          offset: this.pageSize,
+          search_type:this.search_type,
+          search_content:this.search_content
+        }, res => {
+          this.loading = false;
+          this.total = res.total;
+          this.topicList = res.data;
+        })
+      },
+      clickMenu(index) {
+        if (window.location.pathname != index) {
+          window.location.href = index
+        }
+      },
+      openMenu() {
+        this.fold = !this.fold
+      },
+    },
+  }
+  const app = Vue.createApp(App);
+  app.use(ElementPlus);
+  app.mount("#app")
+</script>
+</body>
+
+</html>

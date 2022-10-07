@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- 进度：正在进行修改落地配置搜索框开发 -->
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>loadPage</title>
+<!--  <script src="./static/js/jq.js"></script>-->
+<!--  &lt;!&ndash; 导入样式 &ndash;&gt;-->
+<!--  <link rel="stylesheet" href="./static/css/element.css"/>-->
+<!--  &lt;!&ndash; 导入 Vue 3 &ndash;&gt;-->
+<!--  <script src="./static/js/vue.js"></script>-->
+<!--  &lt;!&ndash; 导入组件库 &ndash;&gt;-->
+<!--  <script src="./static/js/element.js"></script>-->
+  <link rel="shortcut icon" href="./static/image/favicon.ico" type="image/x-icon">
+  {% include "head.html" %}
+  <script src="/static/js/sortable.js"></script>
+  <script src="/static/js/drag.js"></script>
+</head>
+<style>
+  * {
+    padding: 0;
+    margin: 0;
+  }
+
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .upload-demo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .el-upload-list {
+    width: 100%;
+  }
+
+  .loadPage .title {
+    /*width: 54px;*/
+    height: 18px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #000000;
+    line-height: 18px;
+    margin-bottom: 22px;
+    margin-right: 10px;
+  }
+
+  .loadPage .imgList {
+    display: flex;
+    flex-wrap: wrap;
+    height: 235px;
+    min-height: 220px;
+    overflow: visible;
+    width: 100%;
+    overflow: auto;
+    align-items: flex-start;
+  }
+
+  .loadPage .imgList-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    /*height: 339px;*/
+    min-height: 220px;
+    overflow: auto;
+    width: 100%;
+    align-items: flex-start;
+    height: calc(100vh - 720px);
+  }
+
+  .loadPage .imgList .imgList-item {
+    width: 97px;
+    height: 97px;
+    margin-right: 24px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+
+  .loadPage .imgList .imgList-item img {
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .img-gray {
+    /*grayscale(val):val值越大灰度就越深*/
+    -webkit-filter: grayscale(100%);
+    -moz-filter: grayscale(100%);
+    -ms-filter: grayscale(100%);
+    -o-filter: grayscale(100%);
+    filter: grayscale(100%);
+    filter: gray;
+    cursor: not-allowed !important;
+  }
+
+  .loadPage .imgList .imgList-item .btn-left {
+    position: absolute;
+    bottom: -7px;
+    left: -9px;
+  }
+
+  .loadPage .imgList .imgList-item .btn-right {
+    position: absolute;
+    bottom: -7px;
+    right: -9px;
+  }
+
+  .openID2 .el-input__inner {
+    width: 330px;
+  }
+
+  .attr-Upload {
+    width: 100px;
+    height: 100px;
+    border-radius: 5px;
+    border: 1px dashed #d9d9d9;
+    background: url("/static/image/add.png") no-repeat;
+    background-position: 50% 50%;
+    background-size: 20px 20px;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .attr-Upload label {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .attr-Upload img {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .attr-Upload:hover {
+    border: 1px dashed #409EFF;
+    background: url("/static/image/add_blue.png") no-repeat;
+    background-position: 50% 50%;
+    background-size: 20px 20px;
+  }
+
+  .loadPage .el-main{
+    padding-bottom: 0;
+  }
+
+
+</style>
+
+<body>
+<div id="app" class="loadPage">
+  <el-container>
+    <el-aside :width="fold ? '200px' : '60px'">
+      {% include "menu.html" %}
+    </el-aside>
+    <el-main>
+      <el-header height="56px" style="display: flex;align-items: center;">
+        <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+          <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="落地页管理">
+            <template #icon>
+              <el-icon>
+                <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+              </el-icon>
+            </template>
+          </el-page-header>
+          <form method="post" style="display: inline-block;" action="/loginout">
+            <button type="submit" class="btn btn-primary">注销</button>
+          </form>
+        </div>
+      </el-header>
+      <el-card>
+        <div style="margin-bottom: 22px">
+          <el-row>
+            <el-col :span="5">
+              <span class="title">图片库</span>
+              <el-button type="primary" size="small" @click="openUpload">+</el-button>
+            </el-col>
+
+            <el-col :span="3" :offset="10">
+              <el-select v-model="use" style="width: 100%;" @change="search()" placeholder="选择绑定状态" clearable @clear="use = '';keywordsID = false">
+                <el-option label="已绑定" value="1"></el-option>
+                <el-option label="未绑定" value="0"></el-option>
+              </el-select>
+            </el-col>
+            <el-col :span="3">
+              <el-select
+                v-model='project'
+                placeholder="选择关联项目"
+                filterable
+                style="width: 100%;"
+                clearable
+              >
+                <el-option
+                  v-for="item in projectList"
+                  :label="item.name"
+                  :value="item.id"
+                  :key="item.id"
+                />
+              </el-select>
+            </el-col>
+            <el-col :span="3">
+              <el-input v-model="keywords" :disabled="use == '0'" placeholder="输入游戏名搜索" />
+            </el-col>
+          </el-row>
+        </div>
+        <div class="imgList">
+          <div class="imgList-item" v-for="item in imgList" :key="item.id">
+            <img :src="`data:image/${item.imageformat};base64,` + item.cover" :class="{'img-gray':item.ginfo_id == null}"
+                 @click="addCover(item)">
+            <div class="btn-left" v-if="item.ginfo_id" @click="jump(item.ginfo_id)">
+              <el-button size="small" circle>
+                <el-icon>
+                  <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024"
+                       xmlns="http://www.w3.org/2000/svg" data-v-042ca774="">
+                    <!--                    <path fill="currentColor" d="M715.648 625.152L670.4 579.904l90.496-90.56c75.008-74.944 85.12-186.368 22.656-248.896-62.528-62.464-173.952-52.352-248.96 22.656L444.16 353.6l-45.248-45.248 90.496-90.496c100.032-99.968 251.968-110.08 339.456-22.656 87.488 87.488 77.312 239.424-22.656 339.456l-90.496 90.496zm-90.496 90.496l-90.496 90.496C434.624 906.112 282.688 916.224 195.2 828.8c-87.488-87.488-77.312-239.424 22.656-339.456l90.496-90.496 45.248 45.248-90.496 90.56c-75.008 74.944-85.12 186.368-22.656 248.896 62.528 62.464 173.952 52.352 248.96-22.656l90.496-90.496 45.248 45.248zm0-362.048l45.248 45.248L398.848 670.4 353.6 625.152 625.152 353.6z"></path></svg>-->
+                    <path
+                      d="M715.648 625.152L670.4 579.904l90.496-90.56c75.008-74.944 85.12-186.368 22.656-248.896-62.528-62.464-173.952-52.352-248.96 22.656L444.16 353.6l-45.248-45.248 90.496-90.496c100.032-99.968 251.968-110.08 339.456-22.656 87.488 87.488 77.312 239.424-22.656 339.456l-90.496 90.496zm-90.496 90.496l-90.496 90.496C434.624 906.112 282.688 916.224 195.2 828.8c-87.488-87.488-77.312-239.424 22.656-339.456l90.496-90.496 45.248 45.248-90.496 90.56c-75.008 74.944-85.12 186.368-22.656 248.896 62.528 62.464 173.952 52.352 248.96-22.656l90.496-90.496 45.248 45.248zm0-362.048l45.248 45.248L398.848 670.4 353.6 625.152 625.152 353.6z"></path>
+                  </svg>
+                </el-icon>
+              </el-button>
+            </div>
+            <div class="btn-right">
+              <el-button @click="openUpdateGame(item.id,`data:image/${item.imageformat};base64,` + item.cover)" size="small" circle>
+                <el-icon>
+                  <svg t="1639990532110" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                       xmlns="http://www.w3.org/2000/svg" p-id="12171"
+                       xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"
+                       data-v-042ca774="">
+                    <path
+                      d="M199.04 672.64l193.984 112 224-387.968-193.92-112-224 388.032z m-23.872 60.16l32.896 148.288 144.896-45.696-177.792-102.592zM455.04 229.248l193.92 112 56.704-98.112-193.984-112-56.64 98.112zM104.32 708.8l384-665.024 304.768 175.936-383.936 665.088h0.064l-248.448 78.336-56.448-254.336z m384 254.272v-64h448v64h-448z"
+                      p-id="12172"></path>
+                  </svg>
+                </el-icon>
+              </el-button>
+            </div>
+          </div>
+        </div>
+        <div style="overflow: hidden;text-align: center">
+          <el-pagination :current-page="page"
+                         background @current-change="currentChange" layout="prev, pager, next"
+                         :page-size="pageSize" :total="total"></el-pagination>
+        </div>
+      </el-card>
+      <div style="height: 10px"></div>
+      <el-card>
+<!--        <p class="title">落地页配置</p>-->
+        <div>
+          <el-radio-group v-model="openID3">
+            <el-radio-button :label="true">新增落地页</el-radio-button>
+            <el-radio-button :label="false">修改落地页</el-radio-button>
+          </el-radio-group>
+        </div>
+        <!-- 新增落地页配置 -->
+        <template v-if="openID3">
+          <div style="width: 700px;margin-bottom: 15px;margin-top: 15px">
+            <el-row>
+              <el-col :span="6">
+                <el-select v-model="pageConfigData.pid" @change="changePid" placeholder="请选择项目">
+                  <el-option
+                    v-for="item in projectList"
+                    :label="item.name"
+                    :value="item.id"
+                    :key="item.id"
+                  >
+                  </el-option>
+                </el-select>
+              </el-col>
+              <el-col :span="12">
+                <el-input v-model="pageConfigData.new_url" placeholder="Please input" disabled>
+                  <template #append>
+                    <el-button @click="checkUrl">验证url</el-button>
+                  </template>
+                </el-input>
+              </el-col>
+              <el-col :span="6">
+                <el-checkbox v-model="copyID" label="复制" border />
+              </el-col>
+            </el-row>
+          </div>
+          <div class="imgList imgList-bottom">
+            <draggable v-model="pageConfigData.coverlist" v-bind="dragOptions"
+                       tag="transition-group">
+              <template #item="{element,index}">
+                <div class="imgList-item">
+                  <img :src="`data:image/${element.imageformat};base64,` + element.cover">
+                  <div class="btn-left" v-if="element.ginfo_id" @click="jump(element.ginfo_id)">
+                    <el-button size="small" circle>
+                      <el-icon>
+                        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024"
+                             xmlns="http://www.w3.org/2000/svg" data-v-042ca774="">
+                          <!--                    <path fill="currentColor" d="M715.648 625.152L670.4 579.904l90.496-90.56c75.008-74.944 85.12-186.368 22.656-248.896-62.528-62.464-173.952-52.352-248.96 22.656L444.16 353.6l-45.248-45.248 90.496-90.496c100.032-99.968 251.968-110.08 339.456-22.656 87.488 87.488 77.312 239.424-22.656 339.456l-90.496 90.496zm-90.496 90.496l-90.496 90.496C434.624 906.112 282.688 916.224 195.2 828.8c-87.488-87.488-77.312-239.424 22.656-339.456l90.496-90.496 45.248 45.248-90.496 90.56c-75.008 74.944-85.12 186.368-22.656 248.896 62.528 62.464 173.952 52.352 248.96-22.656l90.496-90.496 45.248 45.248zm0-362.048l45.248 45.248L398.848 670.4 353.6 625.152 625.152 353.6z"></path></svg>-->
+                          <path
+                            d="M715.648 625.152L670.4 579.904l90.496-90.56c75.008-74.944 85.12-186.368 22.656-248.896-62.528-62.464-173.952-52.352-248.96 22.656L444.16 353.6l-45.248-45.248 90.496-90.496c100.032-99.968 251.968-110.08 339.456-22.656 87.488 87.488 77.312 239.424-22.656 339.456l-90.496 90.496zm-90.496 90.496l-90.496 90.496C434.624 906.112 282.688 916.224 195.2 828.8c-87.488-87.488-77.312-239.424 22.656-339.456l90.496-90.496 45.248 45.248-90.496 90.56c-75.008 74.944-85.12 186.368-22.656 248.896 62.528 62.464 173.952 52.352 248.96-22.656l90.496-90.496 45.248 45.248zm0-362.048l45.248 45.248L398.848 670.4 353.6 625.152 625.152 353.6z"></path>
+                        </svg>
+                      </el-icon>
+                    </el-button>
+                  </div>
+                  <div class="btn-right">
+                    <el-button @click="deleteImg(index)" size="small" circle>
+                      <el-icon>
+                        <svg t="1639990532110" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                             xmlns="http://www.w3.org/2000/svg" p-id="12171"
+                             xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"
+                             data-v-042ca774="">
+                          <path
+                            d="M160 256H96a32 32 0 010-64h256V95.936a32 32 0 0132-32h256a32 32 0 0132 32V192h256a32 32 0 110 64h-64v672a32 32 0 01-32 32H192a32 32 0 01-32-32V256zm448-64v-64H416v64h192zM224 896h576V256H224v640zm192-128a32 32 0 01-32-32V416a32 32 0 0164 0v320a32 32 0 01-32 32zm192 0a32 32 0 01-32-32V416a32 32 0 0164 0v320a32 32 0 01-32 32z"
+                            p-id="12172"></path>
+                        </svg>
+                      </el-icon>
+                    </el-button>
+                  </div>
+                </div>
+              </template>
+            </draggable>
+          </div>
+          <template v-if="pageConfigData.isSubmit">
+            <div style="text-align: right;margin-bottom: 10px">
+              <!--{% raw %}-->
+              <p>为 {{ pageConfigData.pName }} 生成此落地页</p>
+              <p>落地页链接为： {{ pageConfigData.new_url }}</p>
+              <!--{% endraw %}-->
+            </div>
+            <div style="text-align: right">
+              <el-select v-model="pageConfigData.tmpid" placeholder="请选择模板">
+                <el-option
+                  v-for="item in templateList"
+                  :label="'template/' + item.title"
+                  :value="item.id"
+                  :key="item.id"
+                >
+                </el-option>
+              </el-select>
+              <el-button @click="addLoadPage">新增</el-button>
+            </div>
+          </template>
+        </template>
+        <!-- 修改落地页配置 -->
+        <template v-else>
+          <div style="width: 700px;margin-bottom: 15px;margin-top: 15px">
+            <el-row>
+              <el-col :span="6">
+                <el-select v-model="pageConfigData.pid" @change="changePid" placeholder="请选择项目">
+                  <el-option
+                    v-for="item in projectList"
+                    :label="item.name"
+                    :value="item.id"
+                    :key="item.id"
+                  >
+                  </el-option>
+                </el-select>
+              </el-col>
+              <el-col :span="18">
+                <el-select
+                  v-model="pageConfigData.htmlpage"
+                  :disabled="pageConfigData.pid?false:true"
+                  filterable
+                  remote
+                  reserve-keyword
+                  placeholder="Please enter a keyword"
+                  :remote-method="remoteMethod"
+                  :loading="pageConfigData.loading"
+                  @change="getHtmlPageImg"
+                >
+                  <el-option
+                    v-for="item in pageConfigData.options"
+                    :key="item.htmlpage"
+                    :label="item.htmlpage"
+                    :value="item.htmlpage"
+                  >
+                  </el-option>
+                </el-select>
+              </el-col>
+            </el-row>
+          </div>
+          <div class="imgList imgList-bottom">
+            <draggable v-model="pageConfigData.coverlist" v-bind="dragOptions"
+                       tag="transition-group">
+              <template #item="{element,index}">
+                <div class="imgList-item">
+                  <img :src="`data:image/${element.imageformat};base64,` + element.cover">
+                  <div class="btn-left" v-if="element.ginfo_id" @click="jump(element.ginfo_id)">
+                    <el-button size="small" circle>
+                      <el-icon>
+                        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024"
+                             xmlns="http://www.w3.org/2000/svg" data-v-042ca774="">
+                          <!--                    <path fill="currentColor" d="M715.648 625.152L670.4 579.904l90.496-90.56c75.008-74.944 85.12-186.368 22.656-248.896-62.528-62.464-173.952-52.352-248.96 22.656L444.16 353.6l-45.248-45.248 90.496-90.496c100.032-99.968 251.968-110.08 339.456-22.656 87.488 87.488 77.312 239.424-22.656 339.456l-90.496 90.496zm-90.496 90.496l-90.496 90.496C434.624 906.112 282.688 916.224 195.2 828.8c-87.488-87.488-77.312-239.424 22.656-339.456l90.496-90.496 45.248 45.248-90.496 90.56c-75.008 74.944-85.12 186.368-22.656 248.896 62.528 62.464 173.952 52.352 248.96-22.656l90.496-90.496 45.248 45.248zm0-362.048l45.248 45.248L398.848 670.4 353.6 625.152 625.152 353.6z"></path></svg>-->
+                          <path
+                            d="M715.648 625.152L670.4 579.904l90.496-90.56c75.008-74.944 85.12-186.368 22.656-248.896-62.528-62.464-173.952-52.352-248.96 22.656L444.16 353.6l-45.248-45.248 90.496-90.496c100.032-99.968 251.968-110.08 339.456-22.656 87.488 87.488 77.312 239.424-22.656 339.456l-90.496 90.496zm-90.496 90.496l-90.496 90.496C434.624 906.112 282.688 916.224 195.2 828.8c-87.488-87.488-77.312-239.424 22.656-339.456l90.496-90.496 45.248 45.248-90.496 90.56c-75.008 74.944-85.12 186.368-22.656 248.896 62.528 62.464 173.952 52.352 248.96-22.656l90.496-90.496 45.248 45.248zm0-362.048l45.248 45.248L398.848 670.4 353.6 625.152 625.152 353.6z"></path>
+                        </svg>
+                      </el-icon>
+                    </el-button>
+                  </div>
+                  <div class="btn-right">
+                    <el-button @click="deleteImg(index)" size="small" circle>
+                      <el-icon>
+                        <svg t="1639990532110" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                             xmlns="http://www.w3.org/2000/svg" p-id="12171"
+                             xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"
+                             data-v-042ca774="">
+                          <path
+                            d="M160 256H96a32 32 0 010-64h256V95.936a32 32 0 0132-32h256a32 32 0 0132 32V192h256a32 32 0 110 64h-64v672a32 32 0 01-32 32H192a32 32 0 01-32-32V256zm448-64v-64H416v64h192zM224 896h576V256H224v640zm192-128a32 32 0 01-32-32V416a32 32 0 0164 0v320a32 32 0 01-32 32zm192 0a32 32 0 01-32-32V416a32 32 0 0164 0v320a32 32 0 01-32 32z"
+                            p-id="12172"></path>
+                        </svg>
+                      </el-icon>
+                    </el-button>
+                  </div>
+                </div>
+              </template>
+            </draggable>
+          </div>
+          <div style="text-align: right">
+            <el-select v-model="pageConfigData.tmpid" placeholder="请选择模板">
+              <el-option
+                v-for="item in templateList"
+                :label="'template/' + item.title"
+                :value="item.id"
+                :key="item.id"
+              >
+              </el-option>
+            </el-select>
+            <el-button @click="updateLoadPage()">确定修改</el-button>
+          </div>
+        </template>
+      </el-card>
+      <el-dialog title="上传图片" v-model="openID" width="400px">
+        <div v-if="openID">
+          <div>
+            <el-upload
+              class="upload-demo"
+              drag
+              :auto-upload="false"
+              :on-change="changeFile"
+              action="/loadpage"
+              accept=".png, .jpg, .jpeg, .gif"
+              :limit="1"
+              multiple
+            >
+              <el-icon class="el-icon--upload">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                  <path
+                    d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z"></path>
+                  <!--                   <path fill="currentColor" d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z"></path>-->
+                </svg>
+              </el-icon>
+              <div class="el-upload__text">
+                Drop file here or <em>click to upload</em>
+              </div>
+              <template #tip>
+                <div class="el-upload__tip">
+                  只允许上传单个图片文件(png/jpg/jpeg/gif)
+                </div>
+              </template>
+            </el-upload>
+          </div>
+          <div style="margin-top: 10px;text-align: center">
+            <el-button @click="close()">取消</el-button>
+            <el-button type="primary" @click="upload()">确认上传</el-button>
+          </div>
+        </div>
+      </el-dialog>
+      <el-dialog title="关联游戏" v-model="openID2" width="600px" >
+        <div class="openID2">
+          <el-form ref="formRef" label-width="180px"  v-loading="updateLoading">
+            <el-form-item label="图片：">
+              <div class="attr-Upload">
+                <label for="attrUpload">
+                  <input type="file" @change="uploadImg" id="attrUpload">
+                </label>
+                <img v-if="img" :src="img">
+                <p style="font-size: 12px;color: #999999;position: absolute;
+              bottom: -27px;width: 118px;left: -4px;">（点击图片可修改）</p>
+              </div>
+            </el-form-item>
+            <el-form-item label="当前关联的游戏：">
+              <!--{% raw %}-->
+              <a :href="updateData.url" target="_blank">{{ updateData.url }}</a>
+              <!--{% endraw %}-->
+            </el-form-item>
+            <el-form-item label="选择关联的游戏：">
+              <el-select v-model="updateData.game_id" @change="changeGame" filterable placeholder="Select"
+                         size="large">
+                <el-option
+                  v-for="item in gameList"
+                  :key="item.id"
+                  :label="item.title"
+                  :value="item.id"
+                >
+                </el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="选择关联的项目：">
+              <el-select
+                v-model="updateData.project"
+                multiple
+                placeholder="选择关联的项目"
+                size="large"
+                filterable
+              >
+                <el-option
+                  v-for="item in projectList"
+                  :label="item.name"
+                  :value="item.id"
+                  :key="item.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="选择关联的游戏地址：">
+              <!--{% raw %}-->
+              <a :href="updateData.game_url" target="_blank">{{ updateData.game_url }}</a>
+              <!--{% endraw %}-->
+            </el-form-item>
+          </el-form>
+          <div style="text-align: center">
+            <el-button @click="close2()">取消</el-button>
+            <el-button type="primary" @click="updateImgInfo()" :disabled="updateLoading">确认</el-button>
+          </div>
+        </div>
+      </el-dialog>
+    </el-main>
+  </el-container>
+</div>
+<script>
+  var imgId = 0;
+  const draggable = window['vuedraggable'];
+  const App = {
+    components: {
+      'draggable': draggable,
+    },
+    data() {
+      return {
+        current_page: "/loadpage/",
+        fold: true,
+        openID: false, //控制上传图片窗口
+        openID2: false,  //控制关联游戏窗口
+        fileData: null,
+        fileType: null,  //1-img 2-zip
+        templateList: [],  //模板列表
+        projectList: [], //有权限的项目列表
+        projectListAll : [], //所有项目列表
+        total: 0,  //图片个数
+        page: 1, //图片页码
+        pageSize: 26,  //一页条数
+        use:'', //绑定状态
+        keywords:'',  //关键字
+        project : '', //关联项目
+        keywordsID:false,  //关键字状态
+        imgList: [],
+        gameList: [],  //游戏列表
+        updateData: {  //更新所需数据
+          id: null,  //图片id
+          url: null,  //当前绑定游戏的url
+          game_id: null, //游戏id
+          game_url: null,  //游戏url地址
+          game_resources: null, //游戏资源名
+          type: null,  // add:新增 update:修改
+          cover: null, //图片base64
+          project : [], //关联的项目
+        },
+        openID3: true,  //控制落地页配置状态 true-新增落地页 false-修改落地页
+        copyID:false, //是否启用复制功能
+        pageConfigData: {
+          lid:null, //落地页id
+          pid: null, //项目id
+          pName: null, //项目名称
+          tmpid: null, //模板id
+          htmlpage: null,  //落地页html
+          coverlist: [],
+          htmlOptions: [],
+          new_url: null, //输入框内容
+          isSubmit: false, //是否可以提交
+          loading: false,
+          options: [],
+        },
+        htmlOptions: [],
+        img: null,
+        timer:null,
+        updateLoading: false,
+      }
+    },
+    computed: {
+      dragOptions() {
+        return {
+          animation: 200,
+          group: "description",
+          disabled: false,
+          ghostClass: "ghost"
+        };
+      },
+    },
+    watch: {
+      openID3(val) {
+        this.copyID = false;
+        this.initPageConfigData();
+      },
+      keywords(){
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+          this.search();
+        },500)
+      },
+      project(){
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+          this.search();
+        },500)
+      }
+    },
+    mounted() {
+      this.getImgList();
+      this.getGamelist();
+      this.getProjectList();
+      this.getTemplateList();
+      this.$watch(
+        () => [...this.pageConfigData.coverlist], (val, old) => {
+          if (!this.openID3) return;
+          if (val.length > 0) {
+            this.pageConfigData.new_url = val[0].imagename + '.html';
+            this.checkUrl();
+          }
+        },
+      );
+    },
+    methods: {
+      search(){
+        this.page = 1;
+        if(this.use == '0'){
+          this.keywords = '';
+          this.keywordsID = true;
+        }
+        this.getImgList();
+      },
+      deleteImg(index) {
+        this.pageConfigData.coverlist.splice(index, 1);
+      },
+      getTime() {
+        return imgId++;
+      },
+      remoteMethod(query) {
+        if (query) {
+          this.pageConfigData.loading = true;
+          setTimeout(() => {
+            this.pageConfigData.loading = false;
+            this.getHtmlPageList(query);
+          }, 200)
+        } else {
+          options.value = []
+        }
+      },
+      //修改关联信息栏，修改图片操作
+      uploadImg(e) {
+        let img = e.target.files[0];
+        let reader = new FileReader();
+        reader.onloadend = (e) => {
+          if (reader.result) {
+            this.img = reader.result;
+            this.updateData.cover = this.img.split(',')[1];
+            console.log(this.updateData.cover);
+          }
+        }
+        reader.readAsDataURL(img);
+      },
+      //切换项目，获取对应项目名
+      changePid(id) {
+        if(this.openID3){
+          for (let i = 0; i < this.projectList.length; i++) {
+            if (id == this.projectList[i].id) {
+              this.pageConfigData.pName = this.projectList[i].name;
+              this.pageConfigData.isSubmit = false;
+              this.checkUrl();
+            }
+          }
+        } else {
+          this.pageConfigData = {
+            pid: id, //项目id
+            pName: null, //项目名称
+            tmpid: null, //模板id
+            htmlpage: null,  //落地页html
+            coverlist: [],
+            htmlOptions: [],
+            new_url: null,
+            isSubmit: false, //是否可以提交
+            loading: false,
+            options: [],
+          }
+        }
+      },
+      //获取项目列表
+      getProjectList() {
+        var formdata = new FormData()
+        formdata.append("select", "project")
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.projectList = res;
+          },
+          error: err => {
+            console.log(err);
+          }
+        })
+      },
+      //获取项目列表
+      // getProjectListAll() {
+      //   var formdata = new FormData()
+      //   formdata.append("search", "project")
+      //   $.ajax({
+      //     url: "/loadpage/",
+      //     method: "POST",
+      //     dataType: "json",
+      //     contentType: false,
+      //     processData: false,
+      //     "data": formdata,
+      //     success: res => {
+      //       this.projectListAll = res;
+      //     },
+      //     error: err => {
+      //       console.log(err);
+      //     }
+      //   })
+      // },
+      //新增-修改切换后初始化pageConfigData数据
+      initPageConfigData() {
+        let coverlist = this.pageConfigData.coverlist;
+        this.pageConfigData = {
+          pid: null, //项目id
+          pName: null, //项目名称
+          tmpid: null, //模板id
+          htmlpage: null,  //落地页html
+          coverlist: [],
+          htmlOptions: [],
+          new_url: null,
+          isSubmit: false, //是否可以提交
+          loading: false,
+          options: [],
+        }
+        if (this.copyID){
+          this.pageConfigData.coverlist = coverlist;
+        }
+      },
+      //点击添加图片到下方落地页配置栏
+      addCover(item) {
+        if (item.ginfo_id) {
+          if (this.openID3) {
+            this.pageConfigData.coverlist.push(item);
+          } else {
+            if (this.pageConfigData.htmlpage) {
+              this.pageConfigData.coverlist.push(item);
+            } else {
+              this.$message.error('请选择落地页');
+            }
+          }
+        }
+      },
+      clickMenu(index) {
+        if (window.location.pathname != index) {
+          window.location.href = index
+        }
+      },
+      openMenu() {
+        this.fold = !this.fold
+      },
+      //关闭上传窗口
+      close() {
+        this.openID = false;
+      },
+      changeFile(file) {
+        console.log(file.raw.type)
+        if (file.raw.type === 'image/gif') {
+          this.fileType = 'gif';
+        } else {
+          this.fileType = 'jpg';
+        }
+        var This = this;
+        var reader = new FileReader();
+        reader.readAsDataURL(file.raw);
+        reader.onload = function (e) {
+          this.result // 这个就是base64编码了
+          This.fileData = this.result.split(',')[1];
+        }
+      },
+      //打开上传文件窗口
+      openUpload() {
+        this.fileData = null;
+        this.openID = true;
+      },
+      //上传文件
+      upload() {
+        if (!this.fileData) {
+          this.$message.error("请选择上传文件");
+          return;
+        }
+        var formdata = new FormData()
+        formdata.append("cover", this.fileData)
+        formdata.append("select", "cover")
+        formdata.append("imageformat", this.fileType)
+        $.ajax({
+          url: "/loadpage/image/add",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.getImgList();
+            this.openID = false;
+            this.$message.success("上传成功！");
+          },
+          error: err => {
+            console.log(err);
+            this.$message.error("上传成功！");
+          }
+        })
+      },
+      currentChange(page) {
+        this.page = page;
+        this.getImgList();
+      },
+      //获取图片列表
+      getImgList() {
+        var formdata = new FormData()
+        formdata.append("select", "search")
+        formdata.append("total", this.pageSize)
+        formdata.append("page", this.page)
+        formdata.append("use", this.use)
+        formdata.append("gamename", this.keywords)
+        formdata.append("pid", this.project)
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST", async: false,
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.imgList = res[0];
+            this.total = res[1].total;
+          }
+        })
+      },
+      //打开修改信息窗口
+      openUpdateGame(id, img) {
+        this.updateData.url = null;
+        this.updateData.game_id = null;
+        this.updateData.game_url = null;
+        this.updateData.project = [];
+
+        var formdata = new FormData()
+        formdata.append("select", "image");
+        formdata.append("id", id);
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            if (res) {
+              // this.updateData.type = 'update';
+              this.updateData.game_id = res.id;
+              this.updateData.game_resources = res.resources;
+              this.updateData.game_url = res.test_url;
+              this.updateData.url = res.test_url;
+              this.updateData.project = [];
+              this.updateData.project2 = [];
+              if(res.project){
+                for(let i = 0;i < res.project.length;i++){
+                  let flag = false;
+                  for(let j = 0;j < this.projectList.length;j++){
+                    if(res.project[i] == this.projectList[j].id){
+                      this.updateData.project.push(res.project[i]);
+                      flag = true;
+                      break;
+                    }
+                  }
+                  if (!flag){
+                    this.updateData.project2.push(res.project[i])
+                  }
+                }
+              }
+              console.log(this.updateData)
+            } else {
+              // this.updateData.type = 'add';
+            }
+            this.updateData.id = id;
+            this.img = img;
+            this.updateData.cover = this.img.split(',')[1];
+            this.openID2 = true;
+          }
+        })
+      },
+      //获取游戏列表
+      getGamelist() {
+        var formdata = new FormData()
+        formdata.append("select", "gamesinfo");
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST", async: false,
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            console.log(res);
+            this.gameList = res;
+            // this.imgList = res;
+          }
+        })
+      },
+      //下拉框选择游戏后的一些处理
+      changeGame(id) {
+        console.log(id);
+        for (let i = 0; i < this.gameList.length; i++) {
+          if (id == this.gameList[i].id) {
+            this.updateData.game_url = this.gameList[i].test_url;
+            this.updateData.game_id = this.gameList[i].id;
+            this.updateData.game_resources = this.gameList[i].resources;
+            break;
+          }
+        }
+      },
+      //提交图片信息修改
+      updateImgInfo() {
+        this.updateLoading = true;
+        var formdata = new FormData()
+        formdata.append("cover", this.updateData.cover);
+        formdata.append("id", this.updateData.id);
+        formdata.append("resources", this.updateData.game_resources + '_' + this.updateData.id);
+        formdata.append("ginfoid", this.updateData.game_id);
+        formdata.append("project", this.updateData.project.concat(this.updateData.project2));
+        $.ajax({
+          url: "/loadpage/image/update",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.updateLoading = false;
+            this.getImgList();
+            this.openID2 = false;
+            this.$message.success("修改成功！");
+          },
+          error: err => {
+            console.log(err);
+          }
+        })
+      },
+      //关闭关联游戏窗口
+      close2() {
+        this.openID2 = false;
+      },
+      //超链接跳转
+      jump(id) {
+        for (let i = 0; i < this.gameList.length; i++) {
+          if (this.gameList[i].id == id) {
+            window.open(this.gameList[i].test_url);
+          }
+        }
+      },
+      //新增落地页
+      addLoadPage() {
+        if (this.pageConfigData.tmpid) {
+          let coverlist = [];
+          for (let i = 0; i < this.pageConfigData.coverlist.length; i++) {
+            coverlist.push(this.pageConfigData.coverlist[i].id);
+          }
+          var formdata = new FormData();
+          formdata.append("pid", this.pageConfigData.pid);
+          formdata.append("tempid", this.pageConfigData.tmpid);
+          formdata.append("coverlist", JSON.stringify(coverlist));
+          formdata.append("htmlpage", this.pageConfigData.coverlist[0].imagename);
+          $.ajax({
+            url: "/loadpage/add",
+            method: "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": formdata,
+            success: res => {
+              console.log(res);
+              if (res) {
+                this.$message.success('落地页新增成功！');
+                this.initPageConfigData();
+              } else {
+                this.$message.error('落地页已存在');
+              }
+            },
+            error: err => {
+              console.log(err);
+            }
+          })
+        } else {
+          this.$message.error('请选择模板');
+        }
+      },
+      //提交修改落地页
+      updateLoadPage() {
+        let coverlist = [];
+        for (let i = 0; i < this.pageConfigData.coverlist.length; i++) {
+          coverlist.push(this.pageConfigData.coverlist[i].id);
+        }
+        var formdata = new FormData();
+        formdata.append("lid", this.pageConfigData.lid);
+        formdata.append("tempid", this.pageConfigData.tmpid);
+        formdata.append("coverlist", JSON.stringify(coverlist));
+        formdata.append("updateselect", 'update');
+        formdata.append("htmlpage", this.pageConfigData.htmlpage);
+        $.ajax({
+          url: "/loadpage/update",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            if (res == 'success') {
+              this.$message.success('修改成功');
+            } else {
+              this.$message.error('修改失败');
+            }
+          },
+          error: err => {
+            console.log(err);
+          }
+        })
+      },
+      //获取htmlpage列表,修改落地页配置搜索框使用
+      getHtmlPageList(query) {
+        var formdata = new FormData();
+        formdata.append("select", "loadpage");
+        formdata.append("update", "update");
+        formdata.append("pid", this.pageConfigData.pid);
+        formdata.append("tempid", '1');
+        formdata.append("updateselect", 'select');
+        formdata.append("htmlpage", query);
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.pageConfigData.options = res;
+            console.log(res);
+          },
+          error: err => {
+            console.log(err);
+          }
+        })
+      },
+      //获取落地页图片列表
+      getHtmlPageImg(val) {
+        var formdata = new FormData();
+        formdata.append("select", "loadpage");
+        formdata.append("update", "update");
+        formdata.append("pid", this.pageConfigData.pid);
+        formdata.append("tempid", '1');
+        formdata.append("updateselect", 'select');
+        formdata.append("selectone", 'one');
+        formdata.append("htmlpage", val);
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.pageConfigData.coverlist = res;
+            console.log(this.pageConfigData.options)
+            for (let i = 0; this.pageConfigData.options.length; i++) {
+              if (this.pageConfigData.options[i].htmlpage == val) {
+                this.pageConfigData.tmpid = this.pageConfigData.options[i].tempid;
+                this.pageConfigData.lid = this.pageConfigData.options[i].id;
+                break;
+              }
+            }
+          },
+          error: err => {
+            console.log(err);
+          }
+        })
+      },
+      //校验Url是否已经存在
+      checkUrl() {
+        if (!this.openID3)return;
+        if (this.pageConfigData.pid) {
+          if (this.pageConfigData.coverlist.length == 0) {
+            this.$message.error('请添加图片！');
+            return;
+          }
+          var formdata = new FormData();
+          formdata.append("select", "check");
+          formdata.append("htmlpage", this.pageConfigData.new_url);
+          formdata.append("pid", this.pageConfigData.pid);
+          $.ajax({
+            url: "/loadpage/",
+            method: "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": formdata,
+            success: res => {
+              this.pageConfigData.isSubmit = res;
+              if (res) {
+                this.$message.success('该url未被使用！');
+              } else {
+                this.$message.error('该url已被使用！');
+              }
+            },
+            error: err => {
+              console.log(err);
+            }
+          })
+        } else {
+          this.$message.error("请先选择项目!");
+        }
+      },
+      //查询模板表
+      getTemplateList() {
+        var formdata = new FormData();
+        formdata.append("select", "templates");
+        $.ajax({
+          url: "/loadpage/",
+          method: "POST",
+          dataType: "json",
+          contentType: false,
+          processData: false,
+          "data": formdata,
+          success: res => {
+            this.templateList = res;
+          },
+          error: err => {
+            console.log(err);
+          }
+        })
+      },
+    },
+  }
+  const app = Vue.createApp(App);
+  app.use(ElementPlus);
+  app.mount("#app")
+</script>
+</body>
+
+</html>

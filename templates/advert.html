@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advert</title>
+    {% include "head.html" %}
+</head>
+<style>
+    html {
+        font-family: url(./element-icons.ttf);
+    }
+
+    body,
+    html {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    #app,
+    .el-container,
+    .el-menu {
+        height: 100%;
+    }
+
+    .el-main {
+        position: relative;
+    }
+
+    .upload-demo {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .btn.btn-primary {
+        border-radius: 5px;
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        font-size: 18px;
+        background-color: #409EFF;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .el-upload-list {
+        width: 310px;
+    }
+
+    section.button {
+        display: inline-block
+    }
+
+    .el-button {
+        width: 74px;
+    }
+
+    .el-button span {
+        width: 41px;
+    }
+
+    /* .upload {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+    } */
+
+    .clear {
+        position: absolute;
+        bottom: 4%;
+        right: 14%;
+    }
+
+    .clear .el-button.is-circle {
+        height: 36px;
+        width: 36px;
+    }
+
+    .el-card__body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-left: 0;
+        padding-right: 0;
+        position: relative;
+    }
+
+    .el-card__header {
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    .check {
+        width: 95%;
+    }
+
+    .el-card {
+        margin-bottom: 10px;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+
+<body>
+    <div id="app">
+        <el-container :direction="vertical">
+            <el-aside :width="fold ? '200px' : '60px'">
+                {% include "menu.html" %}
+            </el-aside>
+            <el-container :direction="horizontal">
+                <el-header height="56px" style="display: flex;align-items: center;">
+                    <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+                        <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="广告上传">
+                            <template #icon>
+                                <el-icon>
+                                    <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"
+                                        data-v-152cbb9b="">
+                                        <path fill="currentColor"
+                                            d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z">
+                                        </path>
+                                    </svg>
+                                    <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"
+                                        data-v-152cbb9b="">
+                                        <path fill="currentColor"
+                                            d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z">
+                                        </path>
+                                    </svg>
+                                </el-icon>
+                            </template>
+                        </el-page-header>
+                        <form method="post" style="display: inline-block;" action="/loginout">
+                            <button type="submit" class="btn btn-primary">注销</button>
+                        </form>
+                    </div>
+                </el-header>
+                <el-main height="">
+                    <el-card>
+                        <span>选择一个上传的站点</span>
+                        <el-radio-group v-model="site">
+                            {% for k in project_list %}
+                            <el-radio label="{{k}}">{{k}}</el-radio>
+                            {% endfor %}
+                        </el-radio-group>
+                        <el-alert title="Tips" type="info"
+                            description="选择要上传的站点,文件名也要与之对应,否则在上传时会报错.比如选择lakakids站,文件名应命名为LK_XXXX"></el-alert>
+                    </el-card>
+                    <el-card>
+                        <el-steps :active="activeIdx" align-center style="width: 100%;">
+                            <el-step title="Step 1" :description="desc1"></el-step>
+                            <el-step title="Step 2" :description="desc2"></el-step>
+                            <el-step title="Step 3" :description="desc3"></el-step>
+                        </el-steps>
+                        <section v-if="activeIdx === 1" class="upload">
+                            <el-upload action="" :http-request="upload" class="upload-demo" drag multiple
+                                :before-upload="validateFile" accept=".zip" :on-remove="uploadRemove"
+                                :file-list="fileList">
+                                <el-icon class="el-icon--upload">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                                        <path fill="currentColor"
+                                            d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z">
+                                        </path>
+                                    </svg>
+                                </el-icon>
+                                <div class="el-upload__text">
+                                    拖动文件上传或<em>点击这里上传</em>
+                                </div>
+                                <template #tip>
+                                    <div class="el-upload__tip" style="width: 100%;text-align:center">
+                                        只允许上传 zip 文件，可以添加多个文件,每个文件最多包含6个子文件夹
+                                    </div>
+                                </template>
+                            </el-upload>
+                        </section>
+                        <section v-if="activeIdx === 2" class="check">
+                            <el-card class="box-card" style="width: 100%;">
+                                <template #header>
+                                    <div class="card-header">
+                                        <span>Check info</span>
+                                        <el-button type="primary" @click="checkAds">
+                                            Check<el-icon class="el-icon--right">
+                                                <Check />
+                                            </el-icon>
+                                        </el-button>
+                                    </div>
+                                </template>
+                                <el-alert title="success alert" type="success" :description="checkInfo" show-icon
+                                    v-if="checkStatus === 0">
+                                </el-alert>
+                                <el-alert title="error alert" type="danger" :description="checkInfo" show-icon
+                                    v-if="checkStatus === -1">
+                                </el-alert>
+                            </el-card>
+
+                        </section>
+                        <section v-if="activeIdx === 3">
+                            <el-button type="primary" @click="runScripts" :disable="isRun">run</el-button>
+                        </section>
+                        <section class="button">
+                            <el-button-group>
+                                <el-button type="primary" :disabled="activeIdx === 1" @click="prevStep">
+                                    上一步</el-button>
+                                <el-button type="primary"
+                                    :disabled="activeIdx === 3||(activeIdx === 1&&!isUpload)||(activeIdx===2&&!isChecked)"
+                                    @click="nextStep">
+                                    下一步
+                                </el-button>
+                            </el-button-group>
+                        </section>
+                        <section class="clear">
+                            <el-button type="danger" circle @click="clearFolder" v-if="activeIdx!==3&&site!==''">
+                                <svg class="icon" width="24" height="24" viewBox="0 0 1024 1024"
+                                    xmlns="http://www.w3.org/2000/svg" data-v-042ca774="">
+                                    <path fill="currentColor"
+                                        d="M160 256H96a32 32 0 010-64h256V95.936a32 32 0 0132-32h256a32 32 0 0132 32V192h256a32 32 0 110 64h-64v672a32 32 0 01-32 32H192a32 32 0 01-32-32V256zm448-64v-64H416v64h192zM224 896h576V256H224v640zm192-128a32 32 0 01-32-32V416a32 32 0 0164 0v320a32 32 0 01-32 32zm192 0a32 32 0 01-32-32V416a32 32 0 0164 0v320a32 32 0 01-32 32z">
+                                    </path>
+                                </svg>
+                            </el-button>
+                        </section>
+                    </el-card>
+                    <el-card header="上传信息">
+                        <el-table :data="advertInfo">
+                            <el-table-column prop="username" label="username"></el-table-column>
+                            <el-table-column prop="name" label="project"></el-table-column>
+                            <el-table-column prop="ctime" :formatter="timeFormate" label="ctime"></el-table-column>
+                            <el-table-column label="status">
+                                <template #default="scope">
+                                    <el-tag v-if="scope.row.status == 1" type="info" size="default" effect="dark">
+                                        运行中</el-tag>
+                                    <el-tag v-if="scope.row.status == 2" type="success" size="default" effect="dark">
+                                        已完成</el-tag>
+                                    <el-tag v-if="scope.row.status == 3" type="danger" size="default" effect="dark">
+                                        错误</el-tag>
+                                </template>
+                            </el-table-column>
+                            <!-- <el-table-column label="msg">
+                                <template #default="scope">
+                                    <p v-html="scope.row.msg"></p>
+                                </template>
+                            </el-table-column> -->
+                        </el-table>
+                    </el-card>
+                </el-main>
+            </el-container>
+        </el-container>
+
+    </div>
+    <script>
+        Date.prototype.format = function (fmt) {
+            var o = {
+                "M+": this.getMonth() + 1, //月份 
+                "d+": this.getDate(), //日 
+                "h+": this.getHours(), //小时 
+                "m+": this.getMinutes(), //分 
+                "s+": this.getSeconds(), //秒 
+                "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+                "S": this.getMilliseconds() //毫秒 
+            };
+            if (/(y+)/.test(fmt)) {
+                fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+            }
+            for (var k in o) {
+                if (new RegExp("(" + k + ")").test(fmt)) {
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[
+                        k]).length)));
+                }
+            }
+            return fmt;
+        }
+        const App = {
+            data() {
+                return {
+                    current_page: "/advert/",
+                    fold: true,
+                    isUpload: false,
+                    isChecked: false,
+                    desc1: "将素材文件夹命名为SITE_XXXX,压缩成zip文件后依次上传",
+                    desc2: "点击check按钮检查已上传的文件夹,如果提示有错误,处理完错误后重新上传",
+                    desc3: "点击run按钮执行脚本,并等待执行结果",
+                    activeIdx: 1,
+                    checkStatus: 2,
+                    checkInfo: "",
+                    fileList: [],
+                    site: "",
+                    cleared: false,
+                    advertInfo: [],
+                    isRun: false,
+                    projectStatus: {},
+                }
+            },
+            created() {
+                this.getAdvertInfo()
+            },
+            mounted() {},
+            methods: {
+                clickMenu(index) {
+                    if (window.location.pathname != index) {
+                        window.location.href = index
+                    }
+                },
+                openMenu() {
+                    this.fold = !this.fold
+                },
+                uploadRemove() {
+                    if (this.fileList.length == 0) {
+                        this.isUpload = false
+                    }
+                },
+                prevStep() {
+                    this.activeIdx -= 1
+                },
+                nextStep() {
+                    this.activeIdx += 1
+                },
+                timeFormate(row, column, cellValue, index) {
+                    return new Date(row[column.property] + '+0800').format("yyyy-MM-dd hh:mm:ss")
+                },
+                upload(param) {
+                    if (!this.cleared) {
+                        this.$message.warning("请先选择项目并点击按钮清空对应文件夹")
+                        return
+                    }
+                    if (this.projectStatus[this.site] === 1) {
+                        this.$message.warning("待上传站被锁定,请等待执行完毕后刷新重试")
+                        return
+                    }
+                    var form = new FormData()
+                    form.append("file", param.file);
+                    form.append('project', this.site)
+                    $.ajax({
+                        "url": '/advert/upload',
+                        "method": "POST",
+                        dataType: "json",
+                        contentType: false,
+                        processData: false,
+                        "data": form,
+                        success: res => {
+                            if (res == 'success') {
+                                // this.fileList.push(param.file.name)
+
+                                this.isUpload = true
+                                this.$notify({
+                                    message: "文件上传成功,继续上传或进行下一步",
+                                    type: "success",
+                                    title: "成功"
+                                })
+                            } else {
+                                this.$notify({
+                                    message: "文件上传失败,服务器问题请联系管理员",
+                                    type: "error",
+                                    title: "失败"
+                                })
+                            }
+
+                        },
+                        error: err => {
+                            this.$notify({
+                                message: "文件上传请求失败,请联系管理员",
+                                type: "error",
+                                title: "失败"
+                            })
+                        }
+                    })
+                },
+                clearFolder() {
+                    var form = new FormData()
+                    form.append("advert", 'del')
+                    form.append("project", this.site)
+
+                    $.ajax({
+                        "url": '/advert/delete',
+                        "method": "POST",
+                        dataType: "json",
+                        contentType: false,
+                        processData: false,
+                        "data": form,
+                        success: res => {
+                            if (res == 'success') {
+                                this.fileList = []
+                                this.isUpload = false
+                                this.cleared = true
+                                this.$notify({
+                                    message: "清空目录成功",
+                                    type: "success",
+                                    title: "成功"
+                                })
+                            } else {
+                                this.$notify({
+                                    message: "清空目录失败,请联系管理员",
+                                    type: "error",
+                                    title: "失败"
+                                })
+                            }
+
+                        }
+                    })
+                },
+                checkAds() {
+
+                    if (!this.isUpload) {
+                        this.$message.warning("不存在文件或文件上传中！")
+                        return
+                    }
+                    var form = new FormData()
+                    form.append("advert", 'check')
+                    form.append("project", this.site)
+                    $.ajax({
+                        "url": '/advert/check',
+                        "method": "POST",
+                        dataType: "json",
+                        contentType: false,
+                        processData: false,
+                        "data": form,
+                        success: res => {
+                            this.checkStatus = res.status
+                            this.checkInfo = res.message
+                            if (res.status == 0) {
+                                this.isChecked = true
+                                this.$notify({
+                                    message: "文件正常",
+                                    type: "success",
+                                    title: "成功"
+                                })
+                            } else {
+                                this.$notify({
+                                    message: "文件内容不符合要求,检查错误信息",
+                                    type: "error",
+                                    title: "失败"
+                                })
+                            }
+
+                        }
+                    })
+
+                },
+                getAdvertInfo() {
+                    var form = new FormData()
+
+                    form.append("advert", 'select')
+                    $.ajax({
+                        "url": '/advert/',
+                        "method": "POST",
+                        dataType: "json",
+                        contentType: false,
+                        processData: false,
+                        "data": form,
+                        success: result => {
+                            if (result) {
+                                this.advertInfo = result;
+                                for (let item of result) {
+                                    this.projectStatus[item['name']] = item['lock']
+                                }
+                                console.log(this.projectStatus);
+                            } else {
+                                this.$notify({
+                                    message: "日志提交失败，请检查用户权限或联系管理员！",
+                                    type: "error",
+                                    title: "失败"
+                                })
+                            }
+                        }
+                    })
+                },
+                runScripts() {
+                    var form = new FormData()
+                    if (!this.isUpload) {
+                        this.$message.warning("不存在文件或文件上传中！")
+                        return
+                    }
+                    this.isRun = true
+                    form.append("advert", 'upload')
+                    form.append('project', this.site)
+                    // 日志记录
+                    $.ajax({
+                        "url": '/advert/upload',
+                        "method": "POST",
+                        dataType: "json",
+                        contentType: false,
+                        processData: false,
+                        "data": form,
+                        success: result => {
+                            if (result == 'success') {
+                                // 发送脚本信息
+                                console.log('ok');
+                                this.refresh();
+                            } else {
+                                this.$notify({
+                                    message: "脚本运行失败，请检查用户权限或联系管理员！",
+                                    type: "error",
+                                    title: "失败"
+                                })
+                            }
+                        }
+                    })
+                },
+                beforeDestroy() {
+                    this.ws.close()
+                },
+                refresh() {
+                    window.location.href = "/advert/";
+                },
+                validateFile(file) {
+                    let filesite = file.name.split("_")[0];
+                    if (this.site === '') {
+                        this.$notify({
+                            title: "错误",
+                            type: 'warning',
+                            message: '请先选择站点'
+                        })
+                        return false
+                    }
+                    if (filesite !== "LK" && filesite !== "PP") {
+                        this.$notify({
+                            title: "错误",
+                            type: 'warning',
+                            message: '文件名错误,请修改后重新上传'
+                        })
+                        return false
+                    }
+                    if ((this.site == 'lakakids' && filesite !== "LK") || (this.site == 'pipajam' && filesite !==
+                            "PP")) {
+                        this.$notify({
+                            title: "错误",
+                            type: 'warning',
+                            message: '文件名与选择site不对应,请修改后重新上传'
+                        })
+                        return false
+                    }
+                },
+            },
+        }
+        const app = Vue.createApp(App);
+        app.use(ElementPlus);
+        app.mount("#app")
+    </script>
+</body>
+
+</html>

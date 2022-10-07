@@ -1,0 +1,198 @@
+<el-menu :default-active="current_page" :collapse="!fold" active-text-color="#ffd04b" background-color="rgb(44, 56, 75)"
+  :collapse-transition="false" text-color="#fff" router @select="clickMenu">
+  <el-menu-item index="/" key="/">
+    <el-icon>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+        <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+      </svg>
+    </el-icon>
+    <template #title>
+      <span>首页</span>
+    </template>
+  </el-menu-item>
+  <el-sub-menu index="2">
+    <template #title>
+      <el-icon><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M640 384v256H384V384h256zm64 0h192v256H704V384zm-64 512H384V704h256v192zm64 0V704h192v192H704zm-64-768v192H384V128h256zm64 0h192v192H704V128zM320 384v256H128V384h192zm0 512H128V704h192v192zm0-768v192H128V128h192z"></path></svg></el-icon>
+      <span>站群管理</span>
+    </template>
+    <el-menu-item index="/sites/" key="/sites/">
+      <el-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+          <path fill="currentColor"
+                d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z">
+          </path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>站点管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/game/" key="/game/">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+             data-v-365b8594="">
+          <path fill="currentColor"
+                d="M480 896V702.08A256.256 256.256 0 01264.064 512h-32.64a96 96 0 01-91.968-68.416L93.632 290.88a76.8 76.8 0 0173.6-98.88H256V96a32 32 0 0132-32h448a32 32 0 0132 32v96h88.768a76.8 76.8 0 0173.6 98.88L884.48 443.52A96 96 0 01792.576 512h-32.64A256.256 256.256 0 01544 702.08V896h128a32 32 0 110 64H352a32 32 0 110-64h128zm224-448V128H320v320a192 192 0 10384 0zm64 0h24.576a32 32 0 0030.656-22.784l45.824-152.768A12.8 12.8 0 00856.768 256H768v192zm-512 0V256h-88.768a12.8 12.8 0 00-12.288 16.448l45.824 152.768A32 32 0 00231.424 448H256z">
+          </path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>游戏管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/engineer/" key="/engineer/">
+      <el-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" t="1642413937814" class="icon" viewBox="0 0 1024 1024" version="1.1" p-id="1265" width="64" height="64"><defs></defs><path d="M897 97.08H129a64.19 64.19 0 0 0-64 64v128.56a64.19 64.19 0 0 0 64 64h768a64.19 64.19 0 0 0 64-64V161.08a64.19 64.19 0 0 0-64-64z m0 192.44l-0.11 0.11H129.11l-0.11-0.11V161.19l0.11-0.11h767.78l0.11 0.11z" p-id="1266"/><path d="M225.71 225.36m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1267"/><path d="M353.74 225.36m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1268"/><path d="M897 383.72H129a64.19 64.19 0 0 0-64 64v128.56a64.19 64.19 0 0 0 64 64h768a64.19 64.19 0 0 0 64-64V447.72a64.19 64.19 0 0 0-64-64z m0 192.44l-0.11 0.11H129.11l-0.11-0.11V447.84l0.11-0.11h767.78l0.11 0.11z" p-id="1269"/><path d="M225.71 512m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1270"/><path d="M353.74 512m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1271"/><path d="M481.71 512.72m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1272"/><path d="M897 670.36H129a64.19 64.19 0 0 0-64 64v128.56a64.19 64.19 0 0 0 64 64h768a64.19 64.19 0 0 0 64-64V734.36a64.19 64.19 0 0 0-64-64z m0 192.44l-0.11 0.11H129.11l-0.11-0.11V734.48l0.11-0.11h767.78l0.11 0.11z" p-id="1273"/><path d="M225.71 798.64m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1274"/><path d="M353.74 798.64m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1275"/><path d="M481.51 798.64m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1276"/><path d="M609.73 798.81m-32 0a32 32 0 1 0 64 0 32 32 0 1 0-64 0Z" p-id="1277"/></svg>
+      </el-icon>
+      <template #title>
+        <span>工程管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/domain/" key="/domain/">
+      <el-icon>
+        <svg t="1640830659173" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1434" xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64"><defs></defs><path d="M512 0L68.48 256v512L512 1024l443.52-256V256L512 0z m256 707.84c0 30.08-27.562667 55.04-65.237333 55.04-26.922667 0-57.642667-10.88-76.842667-34.56l-256-304.682667v284.16c0 30.762667-24.32 55.04-54.357333 55.04H312.32c-30.762667 0-55.04-25.6-55.04-55.04V316.16c0-30.08 26.88-55.04 64-55.04 27.562667 0 58.88 10.88 78.08 34.56l254.72 304.682667V316.16c0-30.762667 25.6-55.04 55.04-55.04h3.2c30.72 0 55.04 25.6 55.04 55.04v391.68H768z" fill="" p-id="1435"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>域名管理</span>
+      </template>
+    </el-menu-item>
+  </el-sub-menu>
+  <el-sub-menu index="3">
+    <template #title>
+      <el-icon><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M926.784 480H701.312A192.512 192.512 0 0 0 544 322.688V97.216A416.064 416.064 0 0 1 926.784 480zm0 64A416.064 416.064 0 0 1 544 926.784V701.312A192.512 192.512 0 0 0 701.312 544h225.472zM97.28 544h225.472A192.512 192.512 0 0 0 480 701.312v225.472A416.064 416.064 0 0 1 97.216 544zm0-64A416.064 416.064 0 0 1 480 97.216v225.472A192.512 192.512 0 0 0 322.688 480H97.216z"></path></svg></el-icon>
+      <span>运营管理</span>
+    </template>
+    <el-menu-item index="/video/" key="/video/">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+             data-v-365b8594="">
+          <path fill="currentColor"
+                d="M768 576l192-64v320l-192-64v96a32 32 0 01-32 32H96a32 32 0 01-32-32V480a32 32 0 0132-32h640a32 32 0 0132 32v96zM192 768v64h384v-64H192zm192-480a160 160 0 01320 0 160 160 0 01-320 0zm64 0a96 96 0 10192.064-.064A96 96 0 00448 288zm-320 32a128 128 0 11256.064.064A128 128 0 01128 320zm64 0a64 64 0 10128 0 64 64 0 00-128 0z">
+          </path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>视频入库</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/image/" key="/image/">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-042ca774=""><path fill="currentColor" d="M512 128a384 384 0 100 768 384 384 0 000-768zm0-64a448 448 0 110 896 448 448 0 010-896z"></path><path fill="currentColor" d="M640 288q64 0 64 64t-64 64q-64 0-64-64t64-64zM214.656 790.656l-45.312-45.312 185.664-185.6a96 96 0 01123.712-10.24l138.24 98.688a32 32 0 0039.872-2.176L906.688 422.4l42.624 47.744L699.52 693.696a96 96 0 01-119.808 6.592l-138.24-98.752a32 32 0 00-41.152 3.456l-185.664 185.6z"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>链接生成</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/advert/" key="/advert/">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+             data-v-365b8594="">
+          <path fill="currentColor"
+                d="M512 896a384 384 0 100-768 384 384 0 000 768zm0 64a448 448 0 110-896 448 448 0 010 896z"></path>
+          <path fill="currentColor"
+                d="M725.888 315.008C676.48 428.672 624 513.28 568.576 568.64c-55.424 55.424-139.968 107.904-253.568 157.312a12.8 12.8 0 01-16.896-16.832c49.536-113.728 102.016-198.272 157.312-253.632 55.36-55.296 139.904-107.776 253.632-157.312a12.8 12.8 0 0116.832 16.832z">
+          </path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>广告上传</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/gamelist/" key="/gamelist/">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-042ca774=""><path d="M640 384v64H448a128 128 0 00-128 128v128a128 128 0 00128 128h320a128 128 0 00128-128V576a128 128 0 00-64-110.848V394.88c74.56 26.368 128 97.472 128 181.056v128a192 192 0 01-192 192H448a192 192 0 01-192-192V576a192 192 0 01192-192h192z"></path><path d="M384 640v-64h192a128 128 0 00128-128V320a128 128 0 00-128-128H256a128 128 0 00-128 128v128a128 128 0 0064 110.848v70.272A192.064 192.064 0 0164 448V320a192 192 0 01192-192h320a192 192 0 01192 192v128a192 192 0 01-192 192H384z"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>游戏内容</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/loadpage/" key="/loadpage/">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-042ca774=""><path d="M768 832a128 128 0 01-128 128H192A128 128 0 0164 832V384a128 128 0 01128-128v64a64 64 0 00-64 64v448a64 64 0 0064 64h448a64 64 0 0064-64h64z"></path><path  d="M384 128a64 64 0 00-64 64v448a64 64 0 0064 64h448a64 64 0 0064-64V192a64 64 0 00-64-64H384zm0-64h448a128 128 0 01128 128v448a128 128 0 01-128 128H384a128 128 0 01-128-128V192A128 128 0 01384 64z"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>落地页管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/quiz" key="/quiz">
+      <el-icon>
+        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-042ca774=""><path d="M317.056 128L128 344.064V896h768V344.064L706.944 128H317.056zm-14.528-64h418.944a32 32 0 0124.064 10.88l206.528 236.096A32 32 0 01960 332.032V928a32 32 0 01-32 32H96a32 32 0 01-32-32V332.032a32 32 0 017.936-21.12L278.4 75.008A32 32 0 01302.528 64z"></path><path fill="currentColor" d="M64 320h896v64H64z"></path><path fill="currentColor" d="M448 327.872V640h128V327.872L526.08 128h-28.16L448 327.872zM448 64h128l64 256v352a32 32 0 01-32 32H416a32 32 0 01-32-32V320l64-256z"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>问答管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/picturebooks" key="/picturebooks">
+      <el-icon>
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M192 128v768h640V128H192zm-32-64h704a32 32 0 0 1 32 32v832a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32z"></path><path fill="currentColor" d="M672 128h64v768h-64zM96 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32zm0 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32zm0 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32zm0 192h128q32 0 32 32t-32 32H96q-32 0-32-32t32-32z"></path></svg>      </el-icon>
+      <template #title>
+        <span>绘本管理</span>
+      </template>
+    </el-menu-item>
+  </el-sub-menu>
+  <el-sub-menu index="4">
+    <template #title>
+      <el-icon><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M576 128v288l96-96 96 96V128h128v768H320V128h256zm-448 0h128v768H128V128z"></path></svg></el-icon>
+      <span>行政管理</span>
+    </template>
+    <el-menu-item index="/assets" key="/assets">
+      <el-icon>
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M128 384h768v-64a64 64 0 0 0-64-64H192a64 64 0 0 0-64 64v64zm0 64v320a64 64 0 0 0 64 64h640a64 64 0 0 0 64-64V448H128zm64-256h640a128 128 0 0 1 128 128v448a128 128 0 0 1-128 128H192A128 128 0 0 1 64 768V320a128 128 0 0 1 128-128z"></path><path fill="currentColor" d="M384 128v64h256v-64H384zm0-64h256a64 64 0 0 1 64 64v64a64 64 0 0 1-64 64H384a64 64 0 0 1-64-64v-64a64 64 0 0 1 64-64z"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>资产管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/person" key="/person">
+      <el-icon>
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M628.736 528.896A416 416 0 0 1 928 928H96a415.872 415.872 0 0 1 299.264-399.104L512 704l116.736-175.104zM720 304a208 208 0 1 1-416 0 208 208 0 0 1 416 0z"></path></svg>
+      </el-icon>
+      <template #title>
+        <span>人员管理</span>
+      </template>
+    </el-menu-item>
+  </el-sub-menu>
+
+  <el-sub-menu index="5">
+    <template #title>
+      <el-icon><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path fill="currentColor" d="M416 896V128h192v768H416zm-288 0V448h192v448H128zm576 0V320h192v576H704z"></path></svg></el-icon>
+      <span>数据分析</span>
+    </template>
+    <el-menu-item index="/ga" key="/ga">
+      <el-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+          <path fill="currentColor"
+                d="M273.067 477.867h477.866V409.6H273.067v68.267zm0 68.266v51.2A187.733 187.733 0 0 0 460.8 785.067h102.4a187.733 187.733 0 0 0 187.733-187.734v-51.2H273.067zm-34.134-204.8h546.134a34.133 34.133 0 0 1 34.133 34.134v221.866a256 256 0 0 1-256 256H460.8a256 256 0 0 1-256-256V375.467a34.133 34.133 0 0 1 34.133-34.134zM512 34.133a34.133 34.133 0 0 1 34.133 34.134v170.666a34.133 34.133 0 0 1-68.266 0V68.267A34.133 34.133 0 0 1 512 34.133zM375.467 102.4a34.133 34.133 0 0 1 34.133 34.133v102.4a34.133 34.133 0 0 1-68.267 0v-102.4a34.133 34.133 0 0 1 34.134-34.133zm273.066 0a34.133 34.133 0 0 1 34.134 34.133v102.4a34.133 34.133 0 1 1-68.267 0v-102.4a34.133 34.133 0 0 1 34.133-34.133zM170.667 921.668h682.666a34.133 34.133 0 1 1 0 68.267H170.667a34.133 34.133 0 1 1 0-68.267z">
+          </path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>谷歌分析</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/totalcvr" key="/totalcvr">
+      <el-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+          <path fill="currentColor"
+                d="M273.067 477.867h477.866V409.6H273.067v68.267zm0 68.266v51.2A187.733 187.733 0 0 0 460.8 785.067h102.4a187.733 187.733 0 0 0 187.733-187.734v-51.2H273.067zm-34.134-204.8h546.134a34.133 34.133 0 0 1 34.133 34.134v221.866a256 256 0 0 1-256 256H460.8a256 256 0 0 1-256-256V375.467a34.133 34.133 0 0 1 34.133-34.134zM512 34.133a34.133 34.133 0 0 1 34.133 34.134v170.666a34.133 34.133 0 0 1-68.266 0V68.267A34.133 34.133 0 0 1 512 34.133zM375.467 102.4a34.133 34.133 0 0 1 34.133 34.133v102.4a34.133 34.133 0 0 1-68.267 0v-102.4a34.133 34.133 0 0 1 34.134-34.133zm273.066 0a34.133 34.133 0 0 1 34.134 34.133v102.4a34.133 34.133 0 1 1-68.267 0v-102.4a34.133 34.133 0 0 1 34.133-34.133zM170.667 921.668h682.666a34.133 34.133 0 1 1 0 68.267H170.667a34.133 34.133 0 1 1 0-68.267z">
+          </path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>totalcvr</span>
+      </template>
+    </el-menu-item>
+  </el-sub-menu>
+  <!-- <el-menu-item index="/script/" key="/script/">
+    <el-icon>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+        <path fill="currentColor"
+          d="M273.067 477.867h477.866V409.6H273.067v68.267zm0 68.266v51.2A187.733 187.733 0 0 0 460.8 785.067h102.4a187.733 187.733 0 0 0 187.733-187.734v-51.2H273.067zm-34.134-204.8h546.134a34.133 34.133 0 0 1 34.133 34.134v221.866a256 256 0 0 1-256 256H460.8a256 256 0 0 1-256-256V375.467a34.133 34.133 0 0 1 34.133-34.134zM512 34.133a34.133 34.133 0 0 1 34.133 34.134v170.666a34.133 34.133 0 0 1-68.266 0V68.267A34.133 34.133 0 0 1 512 34.133zM375.467 102.4a34.133 34.133 0 0 1 34.133 34.133v102.4a34.133 34.133 0 0 1-68.267 0v-102.4a34.133 34.133 0 0 1 34.134-34.133zm273.066 0a34.133 34.133 0 0 1 34.134 34.133v102.4a34.133 34.133 0 1 1-68.267 0v-102.4a34.133 34.133 0 0 1 34.133-34.133zM170.667 921.668h682.666a34.133 34.133 0 1 1 0 68.267H170.667a34.133 34.133 0 1 1 0-68.267z">
+        </path>
+      </svg>
+    </el-icon>
+    <template #title>
+      <span>脚本工具</span>
+    </template>
+  </el-menu-item> -->
+</el-menu>

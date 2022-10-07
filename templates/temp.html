@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video</title>
+  <script src="/static/js/jq.js"></script>
+  <!-- 导入样式 -->
+  <link rel="stylesheet" href="/static/css/element.css" />
+  <!-- 导入 Vue 3 -->
+  <script src="/static/js/vue.js"></script>
+  <!-- 导入组件库 -->
+  <script src="/static/js/element.js"></script>
+  <link rel="shortcut icon" href="/static/image/favicon.ico" type="image/x-icon">
+</head>
+<style>
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .upload-demo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .el-upload-list {
+    width: 100%;
+  }
+</style>
+
+<body>
+<div id="app">
+  <el-container>
+    <el-aside :width="fold ? '200px' : '60px'">
+      {% include "menu.html" %}
+    </el-aside>
+    <el-main>
+      <el-container>
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="人员管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path fill="currentColor"
+                          d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path fill="currentColor"
+                          d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path>
+                  </svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+              <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main>
+
+        </el-main>
+      </el-container>
+    </el-main>
+  </el-container>
+</div>
+<script>
+  const App = {
+    data() {
+      return {
+        current_page: "/video",
+        fold: true,
+
+      }
+    },
+    mounted() {
+
+    },
+    methods: {
+      clickMenu(index) {
+        if (window.location.pathname != index) {
+          window.location.href = index
+        }
+      },
+      openMenu() {
+        this.fold = !this.fold
+      },
+    },
+  }
+  const app = Vue.createApp(App);
+  app.use(ElementPlus);
+  app.mount("#app")
+</script>
+</body>
+
+</html>

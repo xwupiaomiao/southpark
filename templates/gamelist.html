@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameList</title>
+  {% include "head.html" %}
+  <!-- <script src="./static/js/jq.js"></script>
+  <link rel="stylesheet" href="./static/css/element.css" />
+  <script src="./static/js/vue.js"></script>
+  <script src="./static/js/element.js"></script>
+  <link rel="shortcut icon" href="./static/image/favicon.ico" type="image/x-icon">
+  <script src="./static/js/sortable.js"></script>
+  <script src="./static/js/drag.js"></script> -->
+</head>
+<!-- 
+  2. 限制前缀 <= 6 个字符
+  4. 匹配那个前缀
+  5. 点击后自动刷新， 5s
+ -->
+<style>
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+  .upload-demo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flex {
+    display: felx;
+  }
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list {
+    width: 100%;
+  }
+  .avatar-uploader {
+    display: flex;
+    align-items: center;
+  }
+  .snapshots {
+    width: 100%;
+    display: flex;
+  }
+  .snapshots .avatar-uploader{
+    margin-top: 15px;
+  }
+  .el-form .el-form-item {
+    margin-bottom: 15px !important;
+  }
+
+  .el-form.el-divider--horizontal {
+    margin: 15px 0px !important;
+  }
+  .snapshots-item{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .el-table .el-table__cell {
+    z-index:unset !important;
+  }
+  .el-image-viewer__canvas img{
+    max-height: 70% !important;
+    max-width: 70% !important;
+  }
+
+  /* 截图上传框样式 */
+  .attr-Upload {
+    width: 150px;
+    height: 150px;
+    border-radius: 5px;
+    border: 1px dashed #d9d9d9;
+    background: url("/static/image/add.png") no-repeat;
+    background-position: 50% 50%;
+    background-size: 20px 20px;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .attr-Upload label {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .attr-Upload img {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .attr-Upload:hover {
+    border: 1px dashed #409EFF;
+    background: url("/static/image/add_blue.png") no-repeat;
+    background-position: 50% 50%;
+    background-size: 20px 20px;
+  }
+  .el-main{
+    padding-top: 0 !important;
+  }
+  .snapshots-item{
+    margin: 0 40px;
+  }
+  .el-popper{
+    /*background: #ffffff!important;*/
+    /*color: black !important;*/
+    max-width: 50%;
+  }
+  .table-warp{
+    height: calc(100vh - 300px);
+  }
+</style>
+
+<body>
+  <div id="app">
+    <el-container>
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+        <!--分割线  -->
+      </el-aside>
+      <el-container>
+        <!-- el-header -->
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="游戏内容">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path
+                      d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z">
+                    </path>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path
+                      d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z">
+                    </path>
+                  </svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+              <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <!-- el-main -->
+        <el-main height="">
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <!-- 头部配置 -->
+            <div slot="header">
+              <el-row>
+                <el-col :span="5">
+                  <span>配置游戏</span>
+                  <el-button type="primary" size="small" style="margin-left: 20px;" @click="addGame">
+                    <el-icon>
+                      <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+                           data-v-365b8594="">
+                        <path
+                                d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z">
+                        </path>
+                      </svg>
+                    </el-icon>
+                  </el-button>
+                </el-col>
+                <!--搜索-->
+                <el-col :span="3" :offset="13">
+                  <el-select v-model="searchModules" filterable placeholder="搜索模块" clearable style='width:100%'>
+                    <el-option
+                            v-for="item in modulesList"
+                            :key="item.id"
+                            :value="item.name"
+                    />
+                  </el-select>
+<!--                  <el-input v-model="searchModules" placeholder="搜索模块" @input="filterGameList" clearable></el-input>-->
+                </el-col>
+                <el-col :span="3">
+                  <el-input  v-model="searchResources" @input="filterGameList" placeholder="搜索资源" clearable></el-input>
+                </el-col>
+              </el-row>
+            </div>
+            <br>
+            <div class="table-warp">
+              <el-table border highlight-current-row :data="gameList"
+                        highlight-current-row stripe style="width: 100%" v-loading="loading"
+                        tooltip-effect="light"
+                        height="100%"
+              >
+                <el-table-column label="游戏id" prop="id" width="70" align="center"></el-table-column>
+                </el-table-column>
+                <el-table-column prop="modules" label="模版" show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column prop="title" show-overflow-tooltip label="游戏名">
+                </el-table-column>
+                <el-table-column prop="resources" label="资源" show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column prop="description" show-overflow-tooltip label="描述">
+                </el-table-column>
+                <el-table-column prop="edit_review" show-overflow-tooltip label="评语">
+                </el-table-column>
+                <el-table-column prop="video" show-overflow-tooltip label="视频封面" align="center">
+                  <template #default="scope">
+                    <!--                  <img @click="openPreview(scope.row.videocover)" style="width: 30px;height: 30px" :src="scope.row.videocover"/>-->
+                    <el-image v-if="scope.row.video" style="width: 40px; height: 40px" :src="scope.row.video"
+                              :preview-src-list="[scope.row.video]">
+                      <div slot="error" class="image-slot">
+                        <i class="el-icon-picture-outline"></i>
+                      </div>
+                    </el-image>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="gamevideourl" label="视频链接" width="160">
+                  <template #default="scope">
+                    <!--{% raw %}-->
+                    <el-link type="primary" :underline="false" :href="scope.row.gamevideourl" target="_blank">
+                      {{scope.row.gamevideourl}}</el-link>
+                    <!--{% endraw %}-->
+                  </template>
+                </el-table-column>
+                <el-table-column label="游戏链接" width="160">
+                  <template #default="scope">
+                    <!--{% raw %}-->
+                    <el-link type="primary" :underline="false" :href="scope.row.test_url" target="_blank">
+                      {{scope.row.test_url}}</el-link>
+                    <!--{% endraw %}-->
+                  </template>
+                </el-table-column>
+                <el-table-column prop="cover1" label="游戏截图" width="160">
+                  <template #default="scope">
+                    <el-image v-if="scope.row.game1" style="width: 40px; height: 40px;margin-right: 5px;"
+                              :src="scope.row.game1" :preview-src-list="[scope.row.game1]">
+                      <!-- :preview-src-list="[scope.row.cover1]" -->
+                      <div slot="error" class="image-slot">
+                        <i class="el-icon-picture-outline"></i>
+                      </div>
+                    </el-image>
+                    <el-image v-if="scope.row.game2" style="width: 40px; height: 40px;margin-right: 5px;"
+                              :src="scope.row.game2" :preview-src-list="[scope.row.game2]">
+                      <div slot="error" class="image-slot">
+                        <i class="el-icon-picture-outline"></i>
+                      </div>
+                    </el-image>
+                    <el-image v-if="scope.row.game3" style="width: 40px; height: 40px" :src="scope.row.game3" :preview-src-list="[scope.row.game3]">
+                      <div slot="error" class="image-slot">
+                        <i class="el-icon-picture-outline"></i>
+                      </div>
+                    </el-image>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="username" label="上线人" align="center">
+                </el-table-column>
+                <el-table-column prop="status" label="视频状态" align="center">
+                  <template #default="scope">
+                    <el-button type="info" v-if="scope.row.status==1" >未上传</el-button>
+                    <el-button type="warning" v-if="scope.row.status==2">正在上传</el-button>
+                    <el-button type="success" v-if="scope.row.status==3">上传成功</el-button>
+                    <el-button type="danger" v-if="scope.row.status==4">上传失败</el-button>
+                  </template>
+                </el-table-column>
+                <el-table-column fixed="right" label="操作" width='150px' align="center" fixed="right">
+                  <template #default="scope">
+                    <el-button @click="EditClick(scope.row)" type="primary" size="small" >编辑</el-button>
+                    <el-popconfirm title="是否确认删除" @confirm="deleteGame(scope.row.id)">
+                      <template #reference>
+                        <el-button type="danger" size="small">
+                          删除
+                        </el-button>
+                      </template>
+                    </el-popconfirm>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <!-- 分页 -->
+            <br>
+            <el-pagination background layout="prev, pager, next" :total="totalSize" @prev-click="prevClick"
+              @next-click="nextClick" :page-size="total" @current-change="currentChange">
+            </el-pagination>
+          </el-card>
+          <br>
+          <el-dialog title="匹配游戏" v-model="dialogTableVisible" width="50%" @close="">
+            <span>
+              <el-form :model="siteForm" ref="form" label-width="80px" :inline="false" size="default">
+                <el-row :gutter="24">
+                  <el-col :span="12" :offset="0">
+                    <el-form-item label="模板选择">
+                      <el-select v-model="siteForm.moduleName" filterable placeholder="请选择" @change="moduleChange" clearable>
+                        <el-option v-for="item in modulesList" :key="item.id" :value="item.name">
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12" :offset="0">
+                    <el-form-item label="资源选择">
+                      <el-select v-model="siteForm.resourceName" filterable placeholder="请选择" @change="resourceChange" clearable>
+                        <el-option v-for="item in resourcesList" :key="item.id" :value="item.name">
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+              </el-form>
+            </span>
+            <br>
+            <span slot="footer">
+              <el-button @click="closeAdd">Cancel</el-button>
+              <el-button type="primary" :disabled="!isAdd" @click="confirmAdd">OK</el-button>
+            </span>
+          </el-dialog>
+            <!--显示视频封面-->
+<!--          <el-image v-if="scope.row.videocover" style="width: 40px; height: 40px" :src="scope.row.videocover"-->
+<!--                    :preview-src-list="[scope.row.videocover]">-->
+<!--            <div slot="error" class="image-slot">-->
+<!--              <i class="el-icon-picture-outline"></i>-->
+<!--            </div>-->
+<!--          </el-image>-->
+<!--          <el-dialog v-model="imgPreviewID" width="700px">-->
+<!--            <img style="width: 100%" :src="videocoverSrc"/>-->
+<!--          </el-dialog>-->
+          <!-- 编辑 -->
+          <el-dialog title="编辑" v-model="editVisible" width="50%" @close="dialogClose">
+            <!-- 上传详情 -->
+            <el-form  :model="editForm" ref="form" label-width="80px" :inline="false" size="default" :rules="formRules">
+              <el-form-item  label="游戏名" prop="title">
+                <el-input v-model="editForm.title" placeholder="请输入游戏名"></el-input>
+              </el-form-item>
+              <el-form-item  label="描述" prop="description">
+                <el-input type="textarea" v-model="editForm.description" placeholder="请输入描述"></el-input>
+              </el-form-item>
+              <el-form-item  label="评语" prop="edit_review">
+                <el-input type="textarea" v-model="editForm.edit_review" placeholder="请输入评语"></el-input>
+              </el-form-item>
+              <el-form-item label="视频">
+                <el-upload class="upload-demo" drag action="/gamelist/update" :on-success="VideoSuccess"
+                  :before-upload="beforeUpload" ref="videoUpload">
+                  <el-icon class="el-icon--upload">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                      <path
+                        d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z">
+                      </path>
+                    </svg>
+                  </el-icon>
+                  <div class="el-upload__text">
+                    Drop file here or <em>click to upload</em>
+                  </div>
+                  <template #tip>
+                    <div class="el-upload__tip" style="width: 100%;text-align: center;">
+                      只允许上传视频文件（mp4/mov）文件名不能出现空格
+                    </div>
+                  </template>
+                </el-upload>
+              </el-form-item>
+              <el-divider border-style="dashed"></el-divider>
+              <el-form-item label="封面">
+<!--                <div>-->
+<!--                  <el-image v-if="editForm.videocover" style="width: 170px; height: 170px" :src="editForm.videocover"-->
+<!--                    fit="contain">-->
+<!--                  </el-image>-->
+
+<!--                  <el-upload class="avatar-uploader" action="/gamelist/update" :show-file-list="false"-->
+<!--                    :before-upload="beforeCoverUpload" :on-success="">-->
+<!--                    <el-button type="primary">上传封面</el-button>-->
+<!--                    <div class="el-upload__tip" style="width: 100%;text-align: center;">-->
+<!--                      （注：仅允许上传尺寸为1920×1080的图片）-->
+<!--                    </div>-->
+<!--                  </el-upload>-->
+<!--                </div>-->
+                <div class="attr-Upload" @dragover="fileDragover" @drop="videoFileDrop">
+                  <label for="a_cover_video">
+                    <input type="file" @change="uploadVideoImg($event,a_cover_video)" id="a_cover_video">
+                  </label>
+                  <img v-if="editForm.video" :src="editForm.video">
+                  <p style="font-size: 12px;color: #999999;position: absolute;
+			               bottom: -41px;">（点击或拖拽文件上传）</p>
+                </div>
+              </el-form-item>
+              <el-divider border-style="dashed"></el-divider>
+              <!-- 上传截图 -->
+              <el-form-item label="截图">
+                <div class="snapshots">
+                  <div class="snapshots-item">
+                    <div class="attr-Upload" @dragover="fileDragover" @drop="fileDrop1">
+                      <label for="a_cover1">
+                        <input type="file" @change="uploadImg1($event,a_cover1)" id="a_cover1">
+                      </label>
+                      <img v-if="editForm.game1" :src="editForm.game1">
+                      <p style="font-size: 12px;color: #999999;position: absolute;
+			               bottom: -41px;">（点击或拖拽文件上传）</p>
+                    </div>
+                  </div>
+                  <!-- 分界线 -->
+                  <div class="snapshots-item">
+                    <div class="attr-Upload" @dragover="fileDragover" @drop="fileDrop2" >
+                      <label for="a_cover2">
+                        <input type="file" @change="uploadImg2($event,a_cover2)" id="a_cover2">
+                      </label>
+                      <img v-if="editForm.game2" :src="editForm.game2">
+                      <p style="font-size: 12px;color: #999999;position: absolute;
+			               bottom: -41px;">（点击或拖拽文件上传）</p>
+                    </div>
+                  </div>
+                  <!-- 分界线 -->
+                  <div class="snapshots-item">
+<!--                    </el-upload>-->
+                    <div class="attr-Upload" @dragover="fileDragover" @drop="fileDrop3">
+                      <label for="a_cover3">
+                        <input type="file" @change="uploadImg3($event,a_cover3)" id="a_cover3">
+                      </label>
+                      <img v-if="editForm.game3" :src="editForm.game3">
+                      <p style="font-size: 12px;color: #999999;position: absolute;
+			               bottom: -41px;">（点击或拖拽文件上传）</p>
+                    </div>
+                  </div>
+                  <!-- 分界线 -->
+                </div>
+              </el-form-item>
+            </el-form>
+            <span slot="footer">
+              <el-button @click="closeEdit">Cancel</el-button>
+              <el-button type="primary" :disabled="!isEdit" @click="confirmEdit">OK</el-button>
+            </span>
+          </el-dialog>
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    const App = {
+      data() {
+        return {
+          totalSize: 0,
+          total: 10,
+          page: 1,
+          filename: '',
+          imageUrl: '',
+          videoData: {},
+          videoCoverData: '',
+          fileList: [],
+          current_page: "/gamelist/",
+          fold: true,
+          dialogTableVisible: false,
+          editVisible: false,
+          modulesList: [],
+          resourcesList: [],
+          searchModules: '',
+          searchResources: '',
+          isAdd: true,
+          isEdit: true,
+          siteForm: {
+            moduleName: '',
+            resourceName: '',
+          },
+          editForm: {
+            title: '',
+            description: '',
+            edit_review: '',
+            id: '',
+            videocover: '',
+            cover1: '',
+            cover2: '',
+            cover3: ''
+          },
+          filterlist: [],
+          gameList: [
+            // {
+            //   test_url: 'http://xxxxxx',
+            //   videocover: '',
+            //   status: 1,
+            //   cover1: 'https://images.pexels.com/photos/6674032/pexels-photo-6674032.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+            //   cover2: 'https://images.pexels.com/photos/6674032/pexels-photo-6674032.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+            //   cover3: 'https://images.pexels.com/photos/6674032/pexels-photo-6674032.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500'
+            // }
+          ],
+          loading : false,
+          videocoverSrc : '',
+          imgPreviewID:false, //控制图片预览
+          modulesList : [], //模块列表
+          formRules : {
+            // title: {required: true, message: '此处不能为空！', trigger: 'blur'},
+            // description: {required: true, message: '此处不能为空！', trigger: 'blur'},
+            // edit_review: {required: true, message: '此处不能为空！', trigger: 'blur'},
+          }
+        }
+      },
+      mounted() {
+        this.getGamelist()
+        this.getModulesList()
+      },
+      watch : {
+        searchModules: function(){
+          clearTimeout(this.timer)
+          this.timer = setTimeout(() => {
+            this.getGamelist()
+          },500)
+        },
+        searchResources: function(){
+          clearTimeout(timer)
+          var timer = setTimeout(() => {
+            this.getGamelist()
+          },500)
+        }
+      },
+      methods: {
+        //删除
+        deleteGame(id){
+          let form = new FormData();
+          form.append("id", id)
+          this.postInfo("/gamelist/del",form,res => {
+            console.log(res)
+
+            this.getGamelist()
+            this.$message.success("删除成功！");
+
+          })
+        },
+        //图片上传完成
+        imgSuccess(name,img){
+          let form = new FormData();
+          form.append('id', this.editForm.id);
+          let imagename  = this.editForm.modules + '_' + this.editForm.resources + '_' + name +'.'+ img.name.substring(img.name.lastIndexOf(".")+1);
+          form.append('imagename',imagename)
+          form.append('file', img);
+          console.log(form)
+          this.postInfo('/gamelist/update',form,res => {
+            if(res){
+              this.$message.success("上传成功, 等待处理完成！");
+            }
+          })
+        },
+        //图片点击上传
+        uploadVideoImg(e,key){
+          let img = e.target.files[0];
+          this.imgSuccess('video',img);
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.videoCover = reader.result;
+            }
+          }
+        },
+        uploadImg1(e,key) {
+          let img = e.target.files[0];
+          this.imgSuccess('game1',img);
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.game1 = reader.result;
+            }
+          }
+
+        },
+        uploadImg2(e,key) {
+          let img = e.target.files[0];
+          this.imgSuccess('game2',img);
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.game2 = reader.result;
+            }
+          }
+        },
+        uploadImg3(e,key) {
+          let img = e.target.files[0];
+          this.imgSuccess('game3',img);
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.game3 = reader.result;
+            }
+          }
+
+        },
+        fileDragover(e) {
+          e.preventDefault()
+        },
+
+        //图片拖拽上传
+        videoFileDrop(e){
+          e.preventDefault()
+          let img = e.dataTransfer.files[0];
+          this.imgSuccess('video',img);
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.videoCover = reader.result;
+            }
+          }
+        },
+        fileDrop1(e) {
+          e.preventDefault()
+          // const file = e.dataTransfer.files[0] // 获取到第一个上传的文件对象
+          let img = e.dataTransfer.files[0];
+          this.imgSuccess('game1',img);
+
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.game1 = reader.result;
+            }
+          }
+        },
+        fileDrop2(e) {
+          e.preventDefault()
+          // const file = e.dataTransfer.files[0] // 获取到第一个上传的文件对象
+          let img = e.dataTransfer.files[0];
+          this.imgSuccess('game2',img);
+
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.game2 = reader.result;
+            }
+          }
+        },
+        fileDrop3(e) {
+          e.preventDefault()
+          // const file = e.dataTransfer.files[0] // 获取到第一个上传的文件对象
+          let img = e.dataTransfer.files[0];
+          this.imgSuccess('game3',img);
+          let reader = new FileReader();
+          reader.readAsDataURL(img);
+          reader.onloadend = (e) => {
+            if (reader.result) {
+              this.editForm.game3 = reader.result;
+            }
+          }
+        },
+
+        //获取模块列表
+        getModulesList(){
+          let form = new FormData();
+          form.append("select", "modules")
+          this.postInfo("/gamelist/",form,res => {
+                console.log(res)
+            this.modulesList = res;
+          })
+        },
+
+        //展示截图
+        openPreview(img){
+          console.log(img)
+          this.videocoverSrc = img;
+          this.imgPreviewID = true;
+        },
+        dialogClose(){
+          console.log('关闭')
+          // this.getGamelist()
+          this.clearFiles();
+        },
+        prevClick() {//上一页
+          if (this.page != 1) {
+            this.page = this.page - 1;
+            this.getGamelist()
+          }
+        },
+        nextClick() {
+          if (this.page > this.totalSize / this.total) {
+            this.page = this.page + 1;
+            this.getGamelist()
+          }
+        },
+        currentChange(event) {
+          this.page = event
+          this.getGamelist()
+        },
+        beforeCoverUpload(file) {
+          this.imgUpload(file, 'videocover')
+          return false
+          //发起异步读取文件请求，读取结果为data:url的字符串形式，
+        },
+        Cover1Upload(file) {
+          this.imgUpload(file, 'cover1')
+        },
+        Cover2Upload(file) {
+          this.imgUpload(file, 'cover2')
+        },
+        Cover3Upload(file) {
+          this.imgUpload(file, 'cover3')
+        },
+        imgUpload(file, key) {
+          let that = this;
+          console.log(file, '====');
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = function (ev) {
+            // base64码
+            var videoCoverBase64 = ev.target.result;//或e.target都是一样的
+            that.editForm[key] = videoCoverBase64;
+            console.log('图片的base64', videoCoverBase64)
+          }
+        },
+        clearFiles(){
+          console.log('清除文件')
+          this.$refs['videoUpload'].clearFiles();
+        },
+        VideoSuccess() {
+          var formdata = new FormData();
+          formdata.append('filename', this.filename);
+          formdata.append('id', this.editForm.id);
+          formdata.append('select', 'change');
+          formdata.append("script", `cd video/upload && ffmpeg -i '${this.filename.replace(/\s/g, "_")}' -s 1280*720 -b:v 1.5M ../gamevideo/${this.editForm.id}.mp4 -y`)
+          // this.videoData = formdata;
+          $.ajax({
+            "url": '/gamelist/update',
+            "method": "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": formdata,
+            success: result => {
+              if (result == "success") {
+                this.$message.success("上传成功, 等待处理完成！");
+
+                setTimeout(() => {
+                  this.getGamelist()
+                }, 1000)
+
+              } else {
+                this.$message.error("上传失败或者超时，请联系管理员！")
+              }
+            }
+          })
+        },
+        beforeUpload(file) {
+          var FileExt = file.name.replace(/.+\./, "")
+          if (!(FileExt.toLowerCase().indexOf('mov') > -1 || FileExt.toLowerCase().indexOf('mp4') > -1)) {
+            this.$message({
+              type: 'warning',
+              message: '只允许上传mov、mp4文件！'
+            })
+            return false
+          }
+          if(file.name.indexOf(' ') != -1){
+            this.$message({
+              type: 'warning',
+              message: '文件名不允许出现空格！'
+            })
+            return false
+          }
+          this.filename = file.name
+          return true
+        },
+        filterGameList() {
+          console.log(this.searchModules)
+          if (this.searchModules && this.searchResources) {
+            this.filterlist = this.gameList.filter(item => (item.modules == this.searchModules && item.resources == this.searchResources))
+          } else if (!this.searchModules && this.searchResources) {
+            this.filterlist = this.gameList.filter(item => (item.resources == this.searchResources))
+          } else if (this.searchModules && !this.searchResources) {
+            this.filterlist = this.gameList.filter(item => (item.modules == this.searchModules))
+          }
+        },
+        openMenu() {
+          this.fold = !this.fold
+        },
+        addGame() {
+          this.dialogTableVisible = true;
+          this.getModules()
+        },
+        getGamelist() {
+          this.loading = true;
+          var form = new FormData();
+          form.append("select", "select")
+          form.append("page", this.page)
+          form.append("total", this.total)
+          form.append("modules", this.searchModules)
+          form.append("resources", this.searchResources)
+          this.postInfo('/gamelist/', form, res => {
+            console.log(res, '返回')
+            this.gameList = res[0];
+            this.totalSize = res[1].total;
+            this.loading = false;
+            console.log(res[0],this.gameList)
+          })
+          console.log(this.totalSize, '...')
+        },
+        getModules() {
+          var form = new FormData()
+          form.append("select", "modules")
+          this.postInfo('/gamelist/', form, res => {
+            this.modulesList = res
+          })
+        },
+        getResouce(id) {
+          var form = new FormData()
+          form.append("select", "resources")
+          form.append('id', id)
+          this.postInfo('/gamelist/', form, res => {
+            this.resourcesList = res
+          })
+        },
+        EditClick(row) {
+          this.editVisible = true;
+          this.editForm = { ...row };
+        },
+        moduleChange(event) {
+          let data = this.modulesList.find(item => item.name == event)
+          this.siteForm.resourceName = ''
+          this.getResouce(data.id)
+        },
+        resourceChange(event) {
+        },
+        confirmAdd() {
+          this.isAdd = false
+          var form = new FormData()
+          let mData = this.modulesList.find(item => item.name == this.siteForm.moduleName)
+          let rData = this.resourcesList.find(item => item.name == this.siteForm.resourceName)
+          form.append('modules', mData.name)
+          form.append('resources', rData.name)
+          form.append('select', 'gamesinfo')
+
+          this.postInfo('/gamelist/add', form, res => {
+            // if (res == 'success') {
+            if(res){
+              this.$message.success("资源模块添加成功")
+              setTimeout(() => {
+                this.getGamelist()
+              }, 2000);
+              this.isAdd = true
+              this.closeAdd()
+            }else{
+              this.$message.warning("游戏已存在！")
+            }
+          })
+
+        },
+        closeAdd() {
+          this.dialogTableVisible = false;
+          this.clearData();
+        },
+        closeEdit() {
+          this.editVisible = false;
+          // this.clearEdit()
+        },
+        confirmEdit() {
+          this.isEdit = false;
+          var form = new FormData()
+          form.append('id', this.editForm.id)
+          form.append('title', this.editForm.title)
+          form.append('description', this.editForm.description)
+          form.append('edit_review', this.editForm.edit_review)
+          // form.append('videocover', this.editForm.videocover)
+          // form.append('cover1', this.editForm.cover1)
+          // form.append('cover2', this.editForm.cover2)
+          // form.append('cover3', this.editForm.cover3)
+          form.append('select', 'change')
+          this.postInfo('/gamelist/update', form, res => {
+            this.$message.success("编辑成功");
+            setTimeout(() => {
+              this.getGamelist();
+            }, 2000);
+          })
+          this.isEdit = true
+          this.closeEdit()
+        },
+        clearEdit() {
+          for (var key in this.editForm) {
+            this.editForm[key] = ""
+          }
+        },
+        clearData() {
+          for (var key in this.siteForm) {
+            this.siteForm[key] = ""
+          }
+        },
+        postInfo(url, form, callback) {
+          $.ajax({
+            url,
+            "method": "POST",
+            "data": form,
+            contentType: false,
+            processData: false,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+        clickMenu(index) {
+          if (window.location.pathname != index) {
+            window.location.href = index
+          }
+        },
+      }
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+
+</html>

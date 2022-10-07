@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 not found</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+  /*.el-container{*/
+  /*  justify-content: center;*/
+  /*  align-items: center;*/
+  /*  flex-direction: column;*/
+  /*}*/
+  .page-text{
+    color: #606266;
+    font-size: 20px;
+  }
+  .el-main{
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+</style>
+<body>
+<div id="app">
+  <el-container>
+    <el-aside :width="fold ? '200px' : '60px'">
+      {% include "menu.html" %}
+    </el-aside>
+    <el-container>
+      <el-header height="56px" style="display: flex;align-items: center;">
+        <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+          <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="页面找不到">
+            <template #icon>
+              <el-icon>
+                <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path>
+                </svg>
+              </el-icon>
+            </template>
+          </el-page-header>
+<!--          <form method="post" style="display: inline-block;" action="/loginout">-->
+<!--            <button type="submit" class="btn btn-primary">注销</button>-->
+<!--          </form>-->
+        </div>
+      </el-header>
+
+      <el-main>
+        <img style="width:600px" src="/static/image/404.jpg"/>
+        <p class="page-text">您访问的页面不在地球上 ，请回火星吧 ～</p>
+      </el-main>
+    </el-container>
+  </el-container>
+</div>
+<script>
+  const App = {
+    data(){
+      return {
+        current_page: "/404-not-found",
+        fold: true,
+      }
+    },
+    methods : {
+      clickMenu(index) {
+        if (window.location.pathname != index) {
+          window.location.href = index
+        }
+      },
+      openMenu() {
+        this.fold = !this.fold
+      },
+    }
+
+  };
+  const app = Vue.createApp(App);
+  app.use(ElementPlus);
+  app.mount("#app")
+</script>
+</body>
+</html>

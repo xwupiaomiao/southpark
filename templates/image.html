@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image</title>
+  {% include "head.html" %}
+</head>
+<style>
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .table-warp{
+    height: calc(100vh - 520px);
+  }
+</style>
+<body>
+  <div id="app">
+    <el-container :direction="vertical">
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      <el-container :direction="horizontal">
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="图片上传">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div slot="header">
+              <span>上传图片</span>
+            </div>
+            <div style="display:flex;justify-content: center;">
+              <el-upload
+                class="upload-demo"
+                drag
+                action="/image/upload"
+                :on-success="uploadSuccess"
+                multiple
+              >
+                <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                <div class="el-upload__text">
+                  拖动文件上传或<em>点击这里上传</em>
+                </div>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    文件体积需要小于 100kb，禁止传输压缩包
+                  </div>
+                </template>
+              </el-upload>
+            </div>
+          </el-card>
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div slot="header">
+              <span>文件目录</span>
+            </div>
+            <div class="table-warp">
+              <br>
+              <el-table  :data="imageList.slice((index - 1) * pagenum, index * pagenum )" border stripe height="100%">
+                <el-table-column header-align="center" label="预览" width="180px">
+                  <template #default="scope">
+                    <el-image :src="scope.row.url" fit="fill" :lazy="true"></el-image>
+                  </template>
+                </el-table-column>
+                <el-table-column header-align="center" label="链接地址">
+                  <template #default="scope">
+                    <!--{% raw %}-->
+                    <el-link type="primary" id="linker" :underline="false" :href="scope.row.url" target="_blank">{{scope.row.url}}</el-link>
+                    <!--{% endraw %}-->
+                    <!-- <el-button type="primary" size="small" @click="copyToClip(scope.row.url)">复制链接</el-button> -->
+                  </template>
+                </el-table-column>
+                <el-table-column header-align="center" prop="imagename" label="文件名" width="180px"> </el-table-column>
+                <el-table-column header-align="center" prop="ctime" :formatter="timeFormate" label="更新时间"> </el-table-column>
+                <el-table-column header-align="center" label="状态" width="180px">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.status == 1" type="success" size="default"  effect="dark">上传成功</el-tag>
+                    <el-tag v-else="scope.row.status != 1" type="danger" size="default"  effect="dark">上传失败</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column header-align="center" prop="username" label="上传人" width="80px"></el-table-column>
+              </el-table>
+              
+            </div>
+            <br>
+            <el-pagination
+              background
+              current-page="pageIndex"
+              @current-change="changeIndex"
+              layout="prev, pager, next"
+              :page-size="pagenum"
+              :total="imageList.length">
+            </el-pagination>
+          </el-card>
+          
+        </el-main>
+      </el-container>
+    </el-container>
+    
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份 
+        "d+": this.getDate(),                    //日 
+        "h+": this.getHours(),                   //小时 
+        "m+": this.getMinutes(),                 //分 
+        "s+": this.getSeconds(),                 //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data(){
+        return {
+          current_page: "/image/",
+          fold: true,
+          imageList: [],
+          index: 1,
+          pagenum: 10,
+          pageIndex: 1,
+        }
+      },
+      mounted() {
+        this.getImageList()
+      },
+      methods: {
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        changeIndex(index){
+          this.index = index;
+        },
+        uploadSuccess(){
+          this.getImageList()
+        },
+        copyToClip(url) {
+            var aux = document.createElement("input"); 
+            aux.setAttribute("value", content); 
+            document.body.appendChild(aux); 
+            aux.select();
+            document.execCommand("copy"); 
+            document.body.removeChild(aux);
+            if (message == null) {
+              this.$message.success("复制成功！")
+            }
+        },
+        getImageList(){
+          var form = new FormData()
+          // form.append("select", "select");
+          this.postInfo("/image", form, res => {
+            this.imageList = res
+          })
+        },
+        postInfo(url, form, callback){
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+      }
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

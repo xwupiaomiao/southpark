@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sites</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 100%;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <el-container >
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "admin/menu.html" %}
+      </el-aside>
+      <el-container >
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="项目管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <!--{% raw %}-->
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div slot="header">
+              <span>项目管理</span>
+              <el-button type="primary" size="small" style="margin-left: 20px;" @click="dialogTableVisible = true;isCreate = true;getServers();getZone();">
+                <el-icon>
+                  <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                </el-icon>
+              </el-button>
+            </div>
+            <br>
+            <el-table :data="sites" border stripe>
+              <el-table-column prop="name" label="项目名" ></el-table-column>
+              <el-table-column prop="sname" label="服务器名" ></el-table-column>
+              <el-table-column prop="status" label="状态" width="180">
+                <template #default="scope">
+                  <el-tag v-if="!scope.row.status" size="medium" type="info"  effect="dark">站点生成中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 1 && scope.row.lock == 1" size="medium" type="info"  effect="dark">站点上线中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 2 && scope.row.lock == 1" size="medium" type="info"  effect="dark">站点回退中</el-tag>
+                  <el-tag v-else-if="scope.row.status == 1" size="medium"  effect="dark">站点已生成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 2" type="success" size="medium"  effect="dark">上线完成</el-tag>
+                  <el-tag v-else-if="scope.row.status == 3" type="warning" size="medium"  effect="dark">回退成功</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="测试链接">
+                <template #default="scope">
+                  <el-link type="primary" :href="scope.row.url" target="_blank">{{scope.row.url}}</el-link>
+                </template>
+              </el-table-column>
+              <el-table-column label="域名">
+                <template #default="scope">
+                  <el-link type="primary" :href="'https://' + scope.row.zone" target="_blank">{{scope.row.zone}}</el-link>
+                </template>
+              </el-table-column>
+              <el-table-column label="上线状态">
+                <template #default="scope">
+                  <el-switch v-model="scope.row.forbiden" :active-value="1" :inactive-value="0" @change="toOnline(scope.row)">上线</el-switch>
+                </template>
+              </el-table-column>
+              <el-table-column prop="操作" min-width="260px">
+                <template #default="scope">
+                  <el-button type="primary" size="small" @click="modifySite(scope.row)">修改</el-button>
+                  
+                  <el-popconfirm title="此操作存在风险，请确认删除操作!!!" @confirm="deleteSite(scope.row.id)">
+                    <template #reference>
+                      <el-button type="warning" size="small">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                  <el-button type="danger" size="small" @click="dialogBulkVisible = true;bulkSetNginxForm.project_id = scope.row.id">修改线上 Nginx</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            
+          </el-card>
+          
+          <el-dialog
+          title="项目配置"
+          v-model="dialogTableVisible"
+          @close="closeDialog"
+          width="50%">
+          <span>
+            <el-form :model="siteForm" ref="form" label-width="130px" :inline="false" size="normal">
+              <el-form-item label="git 地址" v-if="isCreate">
+                <el-input v-model="siteForm.giturl" placeholder="请输入 git@github.com: 地址"></el-input>
+              </el-form-item>
+              <el-form-item label="项目文件名" v-if="isCreate">
+                <el-input v-model="siteForm.newfilename" placeholder="请输入新项目文件夹名称"></el-input>
+              </el-form-item>
+              <el-form-item label="项目文件名" v-if="!isCreate">
+                <el-input v-model="siteForm.filename" placeholder="请输入需要修改成的项目文件夹名称"></el-input>
+              </el-form-item>
+              <el-form-item label="测试链接" v-if="!isCreate">
+                <el-input v-model="siteForm.url" placeholder="请输入新的测试链接地址"></el-input>
+              </el-form-item>
+              <el-form-item label="选择服务器">
+                <el-select v-model="siteForm.sid" style="width: 100%;" placeholder="选择项目存放服务器" clearable filterable @change="">
+                  <el-option v-for="item in servers"
+                    :key="item.id"
+                    :label="item.sname"
+                    :value="item.id">
+                      <span style="float: left">{{ item.sname }}</span>
+                      <span style="float: right;color: var(--el-text-color-secondary);font-size: 13px;">{{ item.remark }}</span>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="域名">
+                <el-select v-model="siteForm.zoneinfo_id" style="width: 100%;" placeholder="选择项目域名" clearable filterable @change="">
+                  <el-option v-for="item in zone"
+                    :key="item.id"
+                    :label="item.zone"
+                    :value="item.id">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item v-if="!isCreate" label="Nginx配置">
+                <el-select v-model="siteForm.nginxSelect" style="width: 100%;" placeholder="选择Nginx配置" clearable filterable @change="changeNginxConfig">
+                  <el-option v-for="item in nginx"
+                    :key="item"
+                    :label="item"
+                    :value="item">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item v-if="siteForm.nginx">
+                <el-input v-model="siteForm.nginx" type="textarea" autosize clearable @change=""></el-input>
+              </el-form-item>
+              
+            </el-form>
+          </span>
+          <span slot="footer">
+            <br>
+            <div style="display: flex;justify-content: space-between;width:100%">
+              <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+              <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="addOrSetSite">确定</el-button>
+            </div>
+          </span>
+        </el-dialog>
+        
+        <el-dialog
+          title="修改线上 Nginx"
+          v-model="dialogBulkVisible"
+          @close="closeDialog"
+          width="50%">
+          <span>
+            <el-form :model="bulkSetNginxForm" ref="form" label-width="130px" :inline="false" size="normal">
+              <el-form-item label="Nginx配置">
+                <el-select v-model="bulkSetNginxForm.project" style="width: 100%;" placeholder="选择Nginx配置" clearable filterable @change="changeBulkNginx">
+                  <el-option v-for="item in sites"
+                    :key="item.name"
+                    :label="item.name"
+                    :value="item.name">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item v-if="bulkSetNginxForm.nginx">
+                <el-input v-model="bulkSetNginxForm.nginx" type="textarea" autosize clearable @change=""></el-input>
+              </el-form-item>
+              
+            </el-form>
+          </span>
+          <span slot="footer">
+            <br>
+            <div style="display: flex;justify-content: space-between;width:100%">
+              <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+              <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="bulkSetNginx">确定</el-button>
+            </div>
+          </span>
+        </el-dialog>
+
+<!--{% endraw %}-->
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份 
+        "d+": this.getDate(),                    //日 
+        "h+": this.getHours(),                   //小时 
+        "m+": this.getMinutes(),                 //分 
+        "s+": this.getSeconds(),                 //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data(){
+        return {
+          current_page: "/admin/sites/",
+          fold: true,
+          sites: [],
+          siteForm: {
+            giturl: "",
+            filename: "",
+            url: "",
+            newfilename: "",
+            zoneinfo_id: "",
+            sid: "",
+            nginx: "",
+            nginxSelect: ""
+          },
+          servers: [],
+          zone: [],
+          nginx: ['pc', 'pcmobile', 'pcmobileipad'],
+          dialogTableVisible: false,
+          isCreate: true,
+          disabled: false,
+          dialogBulkVisible: false,
+          bulkSetNginxForm: {
+            project_id: '',
+            project: '',
+            nginx: ''
+          }
+        }
+      },
+      mounted() {
+        this.getAllProject();
+        this.getServers();
+          this.getZone();
+      },
+      methods: {
+        toOnline(data){
+          var form = new FormData();
+          form.append("forbiden", data.forbiden);
+          form.append("pid", data.id);
+          this.postInfo("/admin/sites/forbiden", form, res => {
+            if(res == "success"){
+              this.$message.success("项目上线状态更改成功");
+              this.getAllProject();
+            }else{
+              this.$message.success("项目上线状态更改失败，请联系管理员！")
+            }
+          })
+        },
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        clearData(){
+          for(var key in this.siteForm){
+            this.siteForm[key] = ""
+          }
+          for(var key in this.bulkSetNginxForm){
+            this.bulkSetNginxForm[key] = ""
+          }
+        },
+        closeDialog(){
+          this.dialogBulkVisible = false
+          this.dialogTableVisible = false;
+          this.clearData();
+        },
+        changeNginxConfig(){
+          var form = new FormData();
+          form.append("select", "template");
+          form.append("module", this.siteForm.nginxSelect);
+          this.postInfo("/admin/sites/", form, res => {
+            this.siteForm.nginx = res
+          })
+        },
+        changeBulkNginx(){
+          var form = new FormData();
+          form.append("select", "nginx");
+          form.append("project", this.bulkSetNginxForm.project);
+          this.postInfo("/admin/sites/", form, res => {
+            this.bulkSetNginxForm.nginx = res
+          })
+        },
+        bulkSetNginx(){
+          for(var key in this.bulkSetNginxForm){
+            if(!this.bulkSetNginxForm[key]){
+              this.$message.console.error(`${key} 不能为空！`);
+            }
+          }
+          var form = new FormData()
+          form.append("pid", this.bulkSetNginxForm.project_id)
+          form.append("nginxconf", this.bulkSetNginxForm.nginx)
+          this.postInfo("/admin/sites/editnginx", form, res => {
+            if(res == "success"){
+              this.$message.success("修改提交成功！")
+            }else{
+              this.$message.error("修改提交失败！")
+            }
+          })
+        },
+        addOrSetSite(){
+          if(this.isCreate){
+            this.addSite()
+          }else{
+            this.setSite()
+          }
+        },
+        addSite(){
+          this.disabled = false;
+          var form = new FormData();
+          form.append("giturl", this.siteForm.giturl);
+          form.append("filename", this.siteForm.giturl.split('/').slice(-1)[0].replace('.git', ''));
+          form.append("newfilename", this.siteForm.newfilename);
+          form.append("zoneinfo_id", this.siteForm.zoneinfo_id);
+          form.append("sid", this.siteForm.sid);
+          this.$message.success("新增请求提交成功！")
+          this.postInfo("/admin/sites/add", form, res => {
+            if(res == "success"){
+              this.$message.success("项目新增成功！")
+              this.getAllProject();
+              this.closeDialog();
+            }else{
+              this.$message.error("项目新增失败，请联系管理员！")
+            }
+            this.disabled = true
+          })
+        },
+        modifySite(row){
+          this.isCreate = false;
+          this.siteForm.pid = row.id;
+          this.siteForm.filename = row.name;
+          this.siteForm.url = row.url;
+          this.siteForm.sid = this.servers.filter(x => x.sname == row.sname)[0].id;
+          this.siteForm.zoneinfo_id = this.zone.filter(x => x.zone == row.zone)[0].id;
+          this.dialogTableVisible = true;
+        },
+        setSite(){
+          this.disabled = false;
+          var form = new FormData();
+          form.append("pid", this.siteForm.pid);
+          form.append("filename", this.siteForm.filename);
+          form.append("url", this.siteForm.url);
+          form.append("zoneinfo_id", this.siteForm.zoneinfo_id);
+          form.append("sid", this.siteForm.sid);
+          form.append("nginx_conf", this.siteForm.nginx);
+          this.$message.success("修改请求提交成功！")
+          this.postInfo("/admin/sites/edit", form, res => {
+            if(res == "success"){
+              this.$message.success("项目修改成功！")
+              this.getAllProject();
+              this.closeDialog()
+            }else{
+              this.$message.success("项目修改失败，请联系管理员！")
+            }
+            this.disabled = true
+          })
+        },
+        deleteSite(row){
+          var form = new FormData();
+          form.append("pid", row);
+          this.$message.success("删除请求提交成功！")
+          this.postInfo("/admin/sites/del", form, res => {
+            if(res == "success"){
+              this.$message.success("项目删除成功！");
+              this.getAllProject();
+            }else{
+              this.$message.success("项目删除失败，请联系管理员！")
+            }
+          })
+        },
+        getAllProject(){
+          this.postInfo('/admin/sites/', null, res => {
+            this.sites = res
+          })
+        },
+        getServers(){
+          var form = new FormData();
+          form.append("select", "server");
+          this.postInfo('/admin/sites/', form, res => {
+            this.servers = res
+          })
+        },
+        getZone(){
+          var form = new FormData();
+          form.append("select", "zoneinfo");
+          this.postInfo("/admin/sites/", form, res => {
+            this.zone = res
+          })
+        },
+        postInfo(url, form, callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+        getData(url,callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "GET",
+            contentType: false,
+            processData: false,
+            success: res => {
+              callback(res)
+            }
+          })
+        }
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

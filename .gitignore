@@ -16,8 +16,6 @@ pnpm-debug.log*
 # Editor directories and files
 .idea
 .vscode
-static  
-templates
 sptest.py
 test.txt
 *.suo

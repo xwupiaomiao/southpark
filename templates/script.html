@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Script</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 310px;
+  }
+</style>
+<body>
+  <div id="app">
+    <el-container :direction="vertical">
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      <el-container :direction="horizontal">
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="脚本工具">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main height="">
+          <!-- 选择操作项目 -->
+          <el-card shadow="always" :body-style="{ padding: '10px' }">
+            <div slot="header">
+              <span>上传需要处理的文件</span>
+            </div>
+            <div>
+              <br/>
+              <el-upload
+                class="upload-demo"
+                drag
+                ref="upload"
+                action="/script/upload"
+                multiple
+                :limit="1"
+                :before-upload="beforeUpload"
+                :on-success="success"
+                :on-remove="remove"
+              >
+                <el-icon class="el-icon--upload">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><path fill="currentColor" d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z"></path></svg>
+                </el-icon>
+                <div class="el-upload__text">
+                  拖动文件上传或<em>点击这里上传</em>
+                </div>
+                <template #tip>
+                  <div class="el-upload__tip" style="width: 100%;text-align:center">
+                    只允许上传 zip 文件，每次只支持一个文件运行一个脚本
+                  </div>
+                </template>
+              </el-upload>
+            </div>
+          </el-card>
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '10px' }">
+            <el-tabs v-model="activeTab" @tab-click="changeSelectProject">
+              <el-tab-pane label="LakaKids" name="LakaKids"></el-tab-pane>
+              <el-tab-pane label="PipaJam" name="PipaJam"></el-tab-pane>
+              <el-tab-pane label="BaboJoy" name="BaboJoy"></el-tab-pane>
+              <el-tab-pane label="WakaStar" name="WakaStar"></el-tab-pane>
+              <el-tab-pane label="SharkQuiz" name="SharkQuiz"></el-tab-pane>
+            </el-tabs>
+            <el-table :data="scripts" size="small">
+              <el-table-column prop="name" label="脚本名"></el-table-column>
+              <el-table-column label="文件夹名">
+                <template #default="scope">
+                  <!--{% raw %}-->
+                  <span>{{scope.row.checkFileName}}</span>
+                  <!--{% endraw %}-->
+                </template>
+              </el-table-column>
+              <el-table-column prop="desc" label="用途"></el-table-column>
+              <el-table-column label="目录结构（点击展开查看具体目录内结构）"> 
+                <template #default="scope">
+                  <el-tree :data="scope.row.fileStruct" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="180"> 
+                <template #default="scope">
+                  <el-button type="primary" :disabled="!(scope.row.canIuse && isUpload)" size="default" @click="runScripts(scope.row.name,scope.row.script)">运行</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+          
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '10px' }">
+            <div slot="header">
+              <span>日志信息</span>
+            </div>
+            <br/>
+            <el-button type="primary" size="default" @click="log=''">日志清空</el-button>
+            <br/>
+            <span style="white-space: pre-wrap;" v-html="log"></span>
+          </el-card>
+        </el-main>
+      </el-container>
+    </el-container>
+    
+  </div>
+  <script>
+    const App = {
+      data(){
+        return {
+          current_page: "/script/",
+          fold: true,
+          activeTab: "LakaKids",
+          scripts: [],
+          origin_scripts: [
+          {
+              "name": "落地页上传",
+              "checkFileName": 'lp',
+              "desc": "主要用于 LK、PP、WS、BJ 落地页上传",
+              "project": ["lakakids", "pipajam", "wakastar", "babojoy"],
+              "fileStruct": [
+                {
+                  label: "lp",
+                  children: [
+                    {
+                      label: "需要上传的落地页文件夹（命名例：1130_29810_LK）",
+                      children: [
+                        {
+                          label: "other",
+                          children: [
+                            {
+                              label: "需要上传的图片,顺序 + 游戏 ID（命名例：1_29812.jpg）"
+                            }
+                          ]
+                        },
+                        {
+                          label: "放置在 bigIcon 或者第一位的 cover（命名例：xxx.jpg）"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f lp.zip ]]; then yarn server;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "素材图片尺寸检查",
+              "checkFileName": 'ad_img',
+              "desc": "用于图片素材的尺寸检查",
+              "project": ["lakakids", "pipajam", "wakastar", "babojoy"],
+              "fileStruct": [
+                {
+                  label: "ad-img",
+                  children: [
+                    {
+                      label: "素材文件名",
+                      children: [
+                        {
+                          label: "数字编号文件名",
+                          children: [
+                            {
+                              label: "需要上传的图片"
+                            },
+                            {
+                              label: "template.json"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f img_resize.zip ]]; then node img_resize.js;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "修改游戏封面",
+              "checkFileName": 'modify_cover',
+              "desc": "用于修改 game_id 对应的封面",
+              "project": ["lakakids", "pipajam", "wakastar", "babojoy"],
+              "fileStruct": [
+                {
+                  label: "modify_cover",
+                  children: [
+                    {
+                      label: "以游戏 id 命名的图片（命名例：2999.jpg）"
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f modify_cover.zip ]]; then node modify_cover.js;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "修改 id 对应的游戏",
+              "checkFileName": 'modify_game',
+              "desc": "用于修改 game_id 对应的游戏数据",
+              "project": ["lakakids", "pipajam", "wakastar", "babojoy"],
+              "fileStruct": [
+                {
+                  label: "modify_game",
+                  children: [
+                    {
+                      label: "以 oldGameId_newGameId 命名的任意图片（命名例：2999_4333.jpg）"
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f modify_game.zip ]]; then node modify_game.js;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "上传游戏截图",
+              "checkFileName": 'upload_snapshots',
+              "desc": "用于上传 game_id 对应的截图数据,所有图片格式需要为 jpg，上传前请检查文件格式",
+              "project": ["lakakids", "pipajam", "babojoy"],
+              "fileStruct": [
+                {
+                  label: "upload_snapshots",
+                  children: [
+                    {
+                      label: "以 game_id 命名的文件夹（例如：998）",
+                      children: [
+                        {
+                          label: "1.jpg"
+                        },
+                        {
+                          label: "2.jpg"
+                        },
+                        {
+                          label: "3.jpg"
+                        }
+                      ]
+                    },
+                    {
+                      label: "以 game_id 命名的文件夹（例如：998）",
+                      children: [
+                        {
+                          label: "1.jpg"
+                        },
+                        {
+                          label: "2.jpg"
+                        },
+                        {
+                          label: "3.jpg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f upload_snapshots.zip ]]; then node upload_snapshots.js;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "修改Quiz封面",
+              "checkFileName": 'modify_quiz_cover',
+              "desc": "用于修改 kids_sharkquiz_cover id 对应的封面",
+              "project": ["sharkquiz"],
+              "fileStruct": [
+                {
+                  label: "modify_quiz_cover",
+                  children: [
+                    {
+                      label: "以 kids_sharkquiz_cover id 命名的图片（命名例：2999.jpg）"
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f modify_quiz_cover.zip ]]; then node modify_quiz_cover.js;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "上传 Quiz 落地页",
+              "checkFileName": 'new_quiz_lp',
+              "desc": "用于上传 Quiz 站的落地页",
+              "project": ["sharkquiz"],
+              "fileStruct": [
+                {
+                  label: "new_quiz_lp",
+                  children: [
+                    {
+                      label: `
+                        lp.json文件，内容如下：{
+  "lp": [
+    "110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131",
+    "111,110,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131"
+  ]
+}
+                      `
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f new_quiz_lp.zip ]]; then node new_quiz_lp.js;break;fi;done",
+              "canIuse": false
+            },
+            {
+              "name": "quiz 题目上传",
+              "checkFileName": 'quiz',
+              "desc": "用于上传 quiz 的题目",
+              "project": ["sharkquiz"],
+              "fileStruct": [
+                {
+                  label: "quiz",
+                  children: [
+                    {
+                      label: "topic name",
+                      children: [
+                        {
+                          label: "d.txt"
+                        },
+                        {
+                          label: "tag.txt"
+                        },
+                        {
+                          label: "category.txt"
+                        },
+                        {
+                          label: "series.txt"
+                        },
+                        {
+                          label: "cover"
+                        },
+                        {
+                          label: "其他 6 个 question name",
+                          children: [
+                            {
+                              label: "A.jpg"
+                            },
+                            {
+                              label: "B.jpg"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "script": "cd /root/southpark/landingpagescripts && while true; do if [[ ! -f quiz.zip ]]; then node new_sharkquiz.js;break;fi;done",
+              "canIuse": false
+            },
+          ],
+          ws: null,
+          log: "",
+          isUpload: false
+        }
+      },
+      mounted() {
+        this.changeSelectProject(this.activeTab)
+      },
+      methods: {
+        changeSelectProject(tab){
+          var projectName = tab.props?.name.toLowerCase() ?? tab.toLowerCase();
+          this.scripts = this.origin_scripts.filter(x => x.project && x.project.indexOf(projectName) != -1);
+        },
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        success(){
+          this.isUpload = true
+        },
+        remove(){
+          this.isUpload=false
+        },
+        runScripts(name,script){
+          if(!this.isUpload){
+            this.$message.warning("不存在文件或文件上传中！")
+            return
+          }
+          if (("WebSocket" in window) && !this.ws){
+
+            // 日志记录
+            var form = new FormData()
+            form.append("logname", name)
+
+            this.origin_scripts.forEach(ele => {
+              ele.canIuse = false
+            })
+            $.ajax({
+              "url": '/script/upload',
+              "method": "POST",
+              dataType: "json",
+              contentType: false,
+              processData: false,
+              "data": form,
+              success: result => {
+                if(result == 'success'){
+                  // 发送脚本信息
+                  this.ws = new WebSocket("ws://sp.com/script/websocket");
+                  this.ws.onopen = () =>
+                  {
+                    console.log("连接成功")
+                    this.ws.send(script)
+                    this.$notify({
+                      message: "脚本指令提交成功！",
+                      type: "success",
+                      title: "成功"
+                    })
+                  };
+                  
+                  this.ws.onmessage = (evt) =>
+                  { 
+                    var received_msg = evt.data;
+                    this.log += `\n${received_msg}`
+                    console.log(received_msg)
+                  };
+                  
+                  this.ws.onclose = () =>
+                  { 
+                    // 关闭 websocket
+                    console.log("连接已关闭..."); 
+                    this.isUpload=false
+                    this.$refs['upload'].clearFiles()
+                    this.ws = null
+                  };
+                }else{
+                  this.$notify({
+                    message: "日志提交失败，请检查用户权限或联系管理员！",
+                    type: "error",
+                    title: "失败"
+                  })
+                }
+              }
+            })
+          }
+        },
+        beforeDestroy() {
+          this.ws.close()
+        },
+        beforeUpload(file) {
+          var FileExt = file.name.replace(/.+\./, "")
+          if (FileExt.indexOf('zip') == -1){  
+            this.$notify({
+                title: "错误",
+                type: 'warning',
+                message: '只允许上传zip文件！'
+            })
+            return false
+          }
+          var hasScript = false
+          this.scripts.forEach((ele, index) => {
+            var checkRes = ele.checkFileName === file.name.split('.')[0]
+            if(checkRes){
+              hasScript = true
+            }
+            ele.canIuse = checkRes
+          })
+
+          // 重新排序
+          this.scripts = this.scripts.filter(item => item.canIuse).concat(this.scripts.filter(item => !item.canIuse))
+
+          if(!hasScript){
+            this.$notify({
+              title: "错误",
+              type: "warning",
+              message: "上传的文件没有匹配的脚本可以使用"
+            })
+          }
+          return hasScript
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

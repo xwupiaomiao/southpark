@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Author</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 100%;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <el-container >
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "admin/menu.html" %}
+      </el-aside>
+      <el-container >
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="权限管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <!--{% raw %}-->
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div slot="header">
+              <span>权限管理</span>
+              <el-input style="width: 10%;min-width: 550px;float: right;" v-model="searchUser"
+                  @keyup.enter.native="filterUser" @input="filterUser" placeholder="搜索人名查询权限"></el-input>
+            </div>
+            <br>
+            <el-table :data="currentAuthor" border stripe>
+              <el-table-column prop="name" label="项目名" width="300px"></el-table-column>
+              <el-table-column label="关联人员" >
+                <template #default="scope">
+                  <!-- 显示 -->
+                  <div v-show="!scope.row.isModify">
+                    <el-tag effect="plain" style="margin: 4px;" v-for="item in scope.row.person" effect="dark">{{item.name}}</el-tag>
+                  </div>
+                  <!-- 修改 -->
+                  <div v-show="scope.row.isModify">
+                    <el-select
+                      v-model="scope.row.person_ids"
+                      multiple
+                      style="width: 100%;"
+                      placeholder="选择关联人员"
+                      size="large"
+                      reserve-keyword="false"
+                      filterable
+                    >
+                      <el-option
+                        v-for="item in person"
+                        :label="item.name"
+                        :value="item.id"
+                        :key="item.id"
+                      />
+                    </el-select>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作"  width="300px">
+                <template #default="scope">
+                  <el-button type="primary" size="small" v-show="!scope.row.isModify" @click="scope.row.isModify = true">修改</el-button>
+                  <el-button type="success" size="small" v-show="scope.row.isModify" @click="scope.row.isModify = false;reSetPerson(scope.row.id)">确定</el-button>
+                  <el-button type="warning" size="small" v-show="scope.row.isModify" @click="scope.row.isModify = false;dataBack(scope.row.id)">取消</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            
+          </el-card>
+          
+<!--{% endraw %}-->
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份 
+        "d+": this.getDate(),                    //日 
+        "h+": this.getHours(),                   //小时 
+        "m+": this.getMinutes(),                 //分 
+        "s+": this.getSeconds(),                 //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data(){
+        return {
+          current_page: "/admin/author/",
+          fold: true,
+          author: [],
+          person: [],
+          currentAuthor: [],
+          searchUser: ""
+        }
+      },
+      mounted() {
+        this.getAuthor();
+        this.getPerson();
+      },
+      methods: {
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        filterUser(){
+          this.currentAuthor = [];
+          if(this.searchUser){
+            this.author.forEach(ele => {
+              if(JSON.stringify(ele.person).indexOf(this.searchUser) != -1){
+                this.currentAuthor.push(ele)
+              }
+            })
+          }else{
+            this.currentAuthor = this.author
+          }
+        },
+        dataBack(id){
+          this.author.forEach(ele => {
+            if(ele.id == id){
+              ele.person_ids = ele.person.map(x => x.id)
+            }
+          })
+        },
+        reSetPerson(id){
+          var form = new FormData();
+          this.author.forEach(ele => {
+            if(ele.id == id){
+              form.append("personid", `[${ele.person_ids}]`)
+              form.append("projectid", id)
+            }
+          })
+          this.$message.success("修改请求提交成功！")
+          this.postInfo("/admin/author/edit", form, res => {
+            if(res == "success"){
+              this.$message.success("修改成功！")
+              this.getAuthor()
+            }else{
+              this.$message.success("修改失败，请联系管理员！")
+            }
+          })
+        },
+        getPerson(){
+          var form = new FormData();
+          form.append("table", "person");
+          this.postInfo("/admin/author/", form, res => {
+            if(res.length){
+              // 获取项目
+              res.forEach(ele => {
+                this.person.push({
+                  id: ele.id,
+                  name: ele.chinesename
+                })
+              })
+            }else{
+              this.$message.error("数据请求错误！")
+            }
+          })
+        },
+        getAuthor(){
+          this.author = []
+          var form = new FormData();
+          form.append("table", "project")
+          this.postInfo("/admin/author/", form, res => {
+            if(res.length){
+              // 获取项目
+              res.forEach(ele => {
+                this.author.push(JSON.stringify({
+                  id: ele.id,
+                  name: ele.name
+                }))
+              })
+              // 项目去重
+              this.author = Array.from(new Set(this.author)).map(x => JSON.parse(x))
+              // 人员组装到项目内
+              this.author.forEach(ele => {
+                ele.person = []
+                ele.person_ids = []
+                res.forEach(el => {
+                  if(ele.id == el.id && el.chinesename){
+                    ele.person.push({
+                      id: el["person.id"],
+                      name: el.chinesename
+                    })
+                    ele.person_ids.push(el["person.id"])
+                  }
+                })
+              })
+              this.filterUser()
+            }else{
+              this.$message.error("数据请求错误！")
+            }
+          })
+        },
+        postInfo(url, form, callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+        getData(url,callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "GET",
+            contentType: false,
+            processData: false,
+            success: res => {
+              callback(res)
+            }
+          })
+        }
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

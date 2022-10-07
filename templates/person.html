@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Person</title>
+  <!--  <script src="/static/js/jq.js"></script>-->
+  <!--  &lt;!&ndash; 导入样式 &ndash;&gt;-->
+  <!--  <link rel="stylesheet" href="/static/css/element.css"/>-->
+  <!--  &lt;!&ndash; 导入 Vue 3 &ndash;&gt;-->
+  <!--  <script src="/static/js/vue.js"></script>-->
+  <!--  &lt;!&ndash; 导入组件库 &ndash;&gt;-->
+  <!--  <script src="/static/js/element.js"></script>-->
+  <!--  <link rel="shortcut icon" href="/static/image/favicon.ico" type="image/x-icon">-->
+  {% include "head.html" %}
+</head>
+<style>
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .upload-demo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .el-upload-list {
+    width: 100%;
+  }
+
+  .el-popper {
+    /*background: #ffffff!important;*/
+    /*color: black !important;*/
+    max-width: 50%;
+  }
+
+  /*.el-table {*/
+  /*  height: calc(100vh - 320px) !important;*/
+  /*  overflow-y: scroll !important;*/
+  /*}*/
+  .desktop {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    width: 100%;
+    height: 184px;
+    margin: 20px;
+    background-image: url("/static/image/layout.png");
+    background-position: center;
+    background-size: 100% auto;
+    background-repeat: no-repeat;
+  }
+
+  .no-show {
+    opacity: 0;
+  }
+
+  .location {
+    position: relative;
+    text-align: center;
+  }
+
+  .username {
+    position: absolute;
+  }
+
+  .is-white {
+    padding: 4px 9px;
+    background-color: white;
+  }
+
+  .top-info {
+    bottom: 10px;
+    transform: translate(1px, 0);
+  }
+
+  .bottom-info {
+    top: 10px;
+    transform: translate(1px, 0);
+  }
+
+  .left-info {
+    right: 40%;
+    transform: translate(50%, 0);
+  }
+
+  .right-info {
+    left: 40%;
+    transform: translate(-50%, 0);
+  }
+
+  .layout {
+    width: 100%;
+    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(6, 15%);
+  }
+  .table-warp {
+    height: calc(100vh - 300px);
+  }
+</style>
+
+<body>
+<div id="app">
+  <el-container>
+    <el-aside :width="fold ? '200px' : '60px'">
+      {% include "menu.html" %}
+    </el-aside>
+    <!--{% raw %}-->
+    <el-container>
+      <el-header height="56px" style="display: flex;align-items: center;">
+        <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+          <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="人员管理">
+            <template #icon>
+              <el-icon>
+                <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path>
+                </svg>
+              </el-icon>
+            </template>
+          </el-page-header>
+          <form method="post" style="display: inline-block;" action="/loginout">
+            <button type="submit" class="btn btn-primary">注销</button>
+          </form>
+        </div>
+      </el-header>
+      <el-main height="">
+        <el-tabs v-model="active" type="card" tab-position="top" @tab-click="watchTabChange">
+          <el-tab-pane label="座位图" name="layout">
+            <el-card shadow="always" :body-style="{ padding: '20px' }">
+              <div class="layout" v-for="po in position">
+                <div v-for="item in po" :class="item.length > 0 ? 'desktop' : 'desktop no-show'">
+                  <div class="location" v-if="item.length" v-for="loc in 4">
+                      <span
+                        :class="[loc == 1 || loc == 2 ? 'top-info':'bottom-info', loc == 1 || loc == 3 ? 'left-info':'right-info', 'username']"
+                        v-for="user in item">
+                        <el-tooltip content="" placement="bottom" effect="light" v-if="user.location == loc">
+                          <template #content>
+                            &#12288;&#12288;岗位： {{user.name}}
+                            <br/>
+                            工作职责： {{user.remark}}
+                            <br/>
+                            入职时间： {{user.ctime}}
+                            <br/>
+                            离职时间： {{user.utime}}
+                            <br/>
+                            &#12288;&#12288;状态： {{user.status == 1 ? "在职" : "离职"}}
+                          </template>
+                          <el-button :class="loc == user.location ? '':'no-show'"
+                                     :type="user.status == 1 ? 'primary':'danger'" @click="showSetUserInfo(user)">{{ user.location == loc ? user.chinesename : "" }}</el-button>
+                        </el-tooltip>
+
+                      </span>
+                  </div>
+                </div>
+              </div>
+            </el-card>
+          </el-tab-pane>
+          <el-tab-pane label="员工信息表" name="personInfo">
+            <el-card shadow="always" :body-style="{ padding: '20px' }">
+              <div slot="header">
+                <el-row>
+                  <el-col :span="5">
+                    <span>人员管理</span>
+                    <el-button type="primary" size="default" style="margin-left: 20px;"
+                               @click="isAdd=true;showDialog=true">
+                      <el-icon>
+                        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024"
+                             xmlns="http://www.w3.org/2000/svg"
+                             data-v-365b8594="">
+                          <path
+                            d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z">
+                          </path>
+                        </svg>
+                      </el-icon>
+                    </el-button>
+                  </el-col>
+                  <!--搜索-->
+                  <el-col :span="3" :offset="13">
+                    <el-select v-model="searchForm.status" filterable placeholder="搜索状态" clearable style="width: 100%">
+                      <el-option
+                        v-for='item in statusList'
+                        :label="item.label"
+                        :value="item.value"
+                      />
+                    </el-select>
+                  </el-col>
+                  <el-col :span="3">
+                    <el-input v-model="searchForm.chinesename" clearable placeholder="搜索中文名"></el-input>
+                  </el-col>
+                </el-row>
+              </div>
+              <!-- 表格 -->
+              <div class="table-warp">
+                <el-table border highlight-current-row
+                          :data="handlePersonList.slice((this.pageIndex-1)*this.pageNum,this.pageIndex*this.pageNum)"
+                          highlight-current-row stripe style="width: 100%;margin:20px auto;" v-loading="loading"
+                          tooltip-effect="light"
+                          height="100%"
+                >
+                  <el-table-column label="" prop="index" width="70" align="center"></el-table-column>
+                  <el-table-column label="登录名" prop="username" width="80"></el-table-column>
+                  <el-table-column label="中文名" prop="chinesename" width="80"></el-table-column>
+                  <el-table-column label="性别" prop="sex" width="80">
+                    <template #default="scope">
+                      {{scope.row.sex == 1 ? "男" : "女"}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="生日" prop="birthday" :formatter="timeFormate" width="130"></el-table-column>
+                  <el-table-column label="手机号" prop="mobile" width="130"></el-table-column>
+                  <el-table-column label="邮箱" prop="mail" width="250px"></el-table-column>
+                  <el-table-column label="入职时间" prop="ctime" :formatter="timeFormate" width="130"></el-table-column>
+                  <el-table-column label="离职时间" prop="utime" :formatter="timeFormate" width="130"></el-table-column>
+                  <el-table-column label="岗位" prop="name"></el-table-column>
+                  <el-table-column label="岗位职责" prop="remark" show-overflow-tooltip></el-table-column>
+                  <el-table-column label="使用设备" prop="device" width="100">
+                    <template #default="scope">
+                      {{ scope.row.device == 1 ? "台式机" : ""}}
+                      {{ scope.row.device == 2 ? "笔记本" : ""}}
+                      {{ scope.row.device == 3 ? "自备电脑" : ""}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="状态" prop="status" width="70">
+                    <template #default="scope">
+                      {{scope.row.status == 1 ? "在职" : "离职"}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="备注" prop="personremark" show-overflow-tooltip></el-table-column>
+                  <el-table-column label="操作" width="200px" align="center" fixed="right">
+                    <template #default="scope">
+                      <el-button type="primary" size="default" @click="editPerson(scope.row)">
+                        修改
+                      </el-button>
+                      <el-popconfirm title="是否确认删除" @confirm="deletePerson(scope.row.id)">
+                        <template #reference>
+                          <el-button type="danger" size="default">
+                            删除
+                          </el-button>
+                        </template>
+                      </el-popconfirm>
+
+                    </template>
+                  </el-table-column>
+
+                </el-table>
+              </div>
+
+              <el-row>
+                <el-col :span="12">
+                  <el-pagination style="float: left"
+                                 background
+                                 :currentPage="pageIndex"
+                                 layout="prev, pager, next"
+                                 :page-size="pageNum"
+                                 :total="handlePersonList.length"
+                                 @current-change="changeBooksIndex"
+                  >
+                  </el-pagination>
+                </el-col>
+                <el-col :span="12" style="text-align: right">
+                  <span>总计 : {{handlePersonList.length}}</span>
+                </el-col>
+              </el-row>
+
+            </el-card>
+          </el-tab-pane>
+        </el-tabs>
+      </el-main>
+      <!--新增/修改人员信息-->
+
+      <el-dialog :title="isAdd ? '人员新增' : '人员修改'" v-model="showDialog" @close="closeDialog('dialogFormRef')"
+                 @open="openDialog" :width="'1024px'">
+        <div v-loading="loading2">
+          <el-form :model="dialogForm" ref="dialogFormRef" :inline="false" label-position="right" :rules="rules">
+            <el-row :gutter="20">
+              <el-col v-if="!isAdd" :span="6">
+                <el-form-item label="姓名&#12288;" prop="chinesename">
+                  <el-input v-model="dialogForm.chinesename" :disabled="!isAdd"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col v-if="!isAdd" :span="6"></el-col>
+              <el-col v-if="isAdd" :span="6">
+                <el-form-item label="姓&#12288;&#12288;" prop="first">
+                  <el-input v-model="dialogForm.first"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col v-if="isAdd" :span="6">
+                <el-form-item label="名&#12288;&#12288;" prop="second">
+                  <el-input v-model="dialogForm.second"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="5">
+                <el-form-item label="性别&#12288;" prop="sex">
+                  <el-radio-group v-model="dialogForm.sex" :disabled="!isAdd">
+                    <el-radio :label="1" size="default">男</el-radio>
+                    <el-radio :label="2" size="default">女</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+              <el-col :span="7">
+                <el-form-item label="生日" prop="birthday">
+                  <el-date-picker v-model="dialogForm.birthday" type="date" placeholder="选择生日日期" format="YYYY/MM/DD"
+                                  value-format="YYYY-MM-DD">
+                  </el-date-picker>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="手机号" prop="mobile">
+                  <el-input v-model="dialogForm.mobile"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="邮箱&#12288;" prop="mail">
+                  <el-input v-model="dialogForm.mail">
+                    <template #append>@papayamobile.cn</template>
+                  </el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="入职时间" prop="ctime">
+                  <el-date-picker v-model="dialogForm.ctime" type="date" placeholder="选择入职时间" format="YYYY/MM/DD"
+                                  value-format="YYYY-MM-DD" :disabled="!isAdd">
+                  </el-date-picker>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="离职时间" prop="utime" v-if="!isAdd">
+                  <el-date-picker v-model="dialogForm.utime" type="date" placeholder="选择离职时间" format="YYYY/MM/DD"
+                                  value-format="YYYY-MM-DD">
+                  </el-date-picker>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="岗位&#12288;&#12288;" prop="jid">
+                  <el-select v-model="dialogForm.jid" filterable placeholder="请选择岗位" clearable>
+                    <el-option
+                      v-for="item in jobList"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.id"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="岗位职责" prop="remark">
+                  <el-input v-model="dialogForm.remark"></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="使用设备" prop="device">
+                  <el-radio-group v-model="dialogForm.device">
+                    <el-radio :label="1" size="default">台式机</el-radio>
+                    <el-radio :label="2" size="default">笔记本</el-radio>
+                    <el-radio :label="3" size="default">自备电脑</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12" v-if="!isAdd">
+                <el-form-item label="状态&#12288;&#12288;" prop="status">
+                  <el-radio v-model="dialogForm.status" :label="1" size="default">在职</el-radio>
+                  <el-radio v-model="dialogForm.status" :label="2" size="default">离职</el-radio>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="24">
+                <el-form-item label="备注&#12288;&#12288;" prop="personremark">
+                  <el-input v-model="dialogForm.personremark" type="textarea"></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <!--              <el-form-item label="登录名" prop="username">-->
+            <!--                <el-input v-model="dialogForm.username"></el-input>-->
+            <!--              </el-form-item>-->
+          </el-form>
+          <span slot="footer">
+          <el-button @click="cancelDialog">Cancel</el-button>
+          <el-button type="primary" @click="submitForm('dialogFormRef')">OK</el-button>
+        </span>
+        </div>
+      </el-dialog>
+      <!-- 修改名字 -->
+      <el-dialog title="填写/修改该同学信息" v-model="setLayoutUserForm" width="30%" @close="closeSetUserInfo">
+            <span>
+              <el-form :model="userInfo" ref="userform" label-width="120px" :inline="false">
+
+                 <el-form-item label="姓名">
+                   <el-select v-model="userInfo.pid" filterable placeholder="请选择姓名" clearable>
+                    <el-option v-for="item in pidList" :label="item.chinesename" :value="item.id"></el-option>
+                  </el-select>
+                </el-form-item>
+                <!--                <el-form-item label="岗位">-->
+                <!--                  <el-input v-model="userInfo.post"></el-input>-->
+                <!--                </el-form-item>-->
+                <!--                <el-form-item label="工作职责">-->
+                <!--                  <el-input v-model="userInfo.job"></el-input>-->
+                <!--                </el-form-item>-->
+                <!--                <el-form-item label="入离职时间">-->
+                <!--                  <el-date-picker v-model="userInfo.ctime" type="date" placeholder="选择日期时间">-->
+                <!--                  </el-date-picker>-->
+                <!--                </el-form-item>-->
+                <!--                <el-form-item label="入离职时间">-->
+                <!--                  <el-date-picker v-model="userInfo.utime" type="date" placeholder="选择日期时间">-->
+                <!--                  </el-date-picker>-->
+                <!--                </el-form-item>-->
+                <!--                <el-form-item label="状态">-->
+                <!--                  <el-radio v-model="userInfo.status" :label="1">在职</el-radio>-->
+                <!--                  <el-radio v-model="userInfo.status" :label="2">离职</el-radio>-->
+                <!--                </el-form-item>-->
+              </el-form>
+
+            </span>
+        <span slot="footer">
+              <el-button @click="setLayoutUserForm=false">Cancel</el-button>
+              <el-button type="primary" @click="setLayoutUser()">OK</el-button>
+            </span>
+      </el-dialog>
+    </el-container>
+    <!--{% endraw %}-->
+  </el-container>
+</div>
+<script>
+  Date.prototype.format = function (fmt) {
+    var o = {
+      "M+": this.getMonth() + 1,                 //月份
+      "d+": this.getDate(),                    //日
+      "h+": this.getHours(),                   //小时
+      "m+": this.getMinutes(),                 //分
+      "s+": this.getSeconds(),                 //秒
+      "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+      "S": this.getMilliseconds()             //毫秒
+    };
+    if (/(y+)/.test(fmt)) {
+      fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    }
+    for (var k in o) {
+      if (new RegExp("(" + k + ")").test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+      }
+    }
+    return fmt;
+  }
+  const App = {
+    data() {
+      return {
+        current_page: "/person",
+        fold: true,
+        searchForm: {
+          chinesename: '',
+          status: ''
+        },  //搜索表单
+        statusList: [
+          {label: '在职', value: "1"},
+          {label: '离职', value: "2"},
+        ],
+        pidList: [],
+        active: "layout",
+        desktop: [],
+        setLayoutUserForm: false,
+        userInfo: {
+          id: '',
+          pid: '',
+          // user: '',
+          // post: '', // 岗位
+          // job: "", // 工作职责
+          // ctime: '', // 入职时间
+          // utime : '',//离职时间
+          // status: '' // 是否在职 1 在职 0 离职
+        },
+        position: [],
+        layoutPosition: [
+          [1, 2, 3, 0, 4, 5],
+          [6, 7, 0, 0, 0, 8],
+          [0, 0, 0, 0, 0, 9],
+        ],
+        personList: [], //人员信息列表
+        jobList: [], //岗位列表
+        loading: false,  //是否正在加载
+        pageIndex: 1,  //当前页码
+        pageNum: 20, //一页条数
+        isAdd: false, //是否新增
+        showDialog: false,  //是否显示dialog
+        dialogForm: {
+          // username : '',
+          first: '',
+          second: '',
+          chinesename: '',
+          sex: '',
+          birthday: '',
+          mobile: '',
+          mail: '',
+          ctime: '',
+          utime: '',
+          device: 1,
+          status: 1,
+          remark: '',
+          personremark: '',
+          name: '',
+          jid: ''
+        },  //dialog表单数据
+        rules: {
+          chinesename: {required: true, message: '请输入中文名！', trigger: 'blur'},
+          first: {required: true, message: '请输入姓！', trigger: 'blur'},
+          second: {required: true, message: '请输入名！', trigger: 'blur'},
+          mail: {required: true, message: '请输入邮箱！', trigger: 'blur'},
+          sex: {required: true, message: '请选择性别！', trigger: 'blur'},
+          mobile: {required: true, message: '请输入手机号！', trigger: 'blur'},
+          birthday: {required: true, message: '请输入姓名', trigger: 'blur'},
+          jid: {required: true, message: '请输入姓名', trigger: 'blur'},
+        },
+        loading2:false, //人员新增/修改窗口的loading
+      }
+    },
+    created() {
+      this.getLayout();
+      this.getPidList();
+      this.getPersonList();
+      this.getJobList();
+    },
+    mounted() {
+
+    },
+    watch : {
+      //监听表单岗位变化 改变岗位职责
+      'dialoƒgForm.jid':{
+        handler : function(newValue,oldValue){
+          this.jobList.forEach(item => {
+            if(item.id == newValue){
+              this.dialogForm.remark = item.remark;
+            }
+          })
+        },
+        deep : true,
+      }
+    },
+    computed: {
+      //筛选列表
+      handlePersonList() {
+        return this.personList.filter(item => {
+          return item.chinesename.trim().includes(this.searchForm.chinesename.trim()) && (this.searchForm.status == '' || item.status == this.searchForm.status)
+        })
+      },
+    },
+    methods: {
+
+      //时间格式化
+      timeFormate(row, column, cellValue, index) {
+        if (row[column.property]) {
+          return new Date(row[column.property]).format("yyyy-MM-dd")
+        } else {
+          return " / "
+        }
+      },
+      getPidList() {
+        let form = new FormData()
+        form.append('select', 'person')
+        this.postInfo("/person/layout/update", form, res => {
+          console.log(res)
+          this.pidList = res;
+        })
+      },
+      watchTabChange() {
+        setTimeout(() => {
+          var allDesktop = document.getElementsByClassName("desktop");
+          for (var i = 0; i < allDesktop.length; i++) {
+            const ele = allDesktop[i]
+            ele.style.height = ele.clientWidth + "px"
+          }
+        }, 200);
+      },
+      showSetUserInfo(user) {
+        console.log(user)
+        // this.userInfo = JSON.parse(JSON.stringify(user));
+        this.userInfo.id = user.id
+        this.userInfo.pid = user.pid
+        this.setLayoutUserForm = true
+      },
+      closeSetUserInfo() {
+        this.setLayoutUserForm = false;
+        for (var key in this.userInfo) {
+          this.userInfo[key] = ''
+        }
+      },
+      setLayoutUser() {
+        var form = new FormData();
+        console.log(this.userInfo)
+
+        for (var key in this.userInfo) {
+          // if (!this.userInfo[key]) {
+          //   this.$message.error("请填写完整！");
+          //   return
+          // }
+          // console.log(this.userInfo)
+          if (key.indexOf("time") != -1) {
+            form.append(key, new Date(this.userInfo[key]).format("yyyy-MM-dd"))
+          } else {
+            form.append(key, this.userInfo[key])
+          }
+        }
+        form.append("select", "layout");
+        this.setLayoutUserForm = false;
+        this.postInfo('/person/layout/update', form, res => {
+          if (res == "success") {
+            this.$message.success("修改/添加成功！");
+            this.getLayout();
+          } else {
+            this.$message.error("修改/添加失败，请联系管理员！")
+          }
+        })
+      },
+      layoutResize(){
+        setTimeout(() => {
+          var allDesktop = document.getElementsByClassName("desktop");
+          for(var i = 0; i < allDesktop.length; i++){
+            const ele = allDesktop[i]
+            ele.style.height = ele.clientWidth + "px"
+          }
+        }, 200);
+      },
+      //获取岗位列表
+      getJobList() {
+        let formData = new FormData();
+        formData.append('select', 'job')
+        this.postInfo('/person', formData, res => {
+          if (res) {
+            console.log(res)
+            this.jobList = res;
+          } else {
+            this.$message.error("获取数据失败，联系管理员！")
+          }
+        })
+      },
+      getLayout() {
+        var form = new FormData();
+        // form.append("select", "layout");
+        // form.append("get", "data");
+        this.getInfo('/person/layout', res => {
+          if (res) {
+            var tmp = []
+            this.layoutPosition.forEach(pos => {
+              var thisLine = []
+              pos.forEach(desk => {
+                var tmpOneDesk = []
+                if (desk != 0) {
+                  res.forEach(all => {
+                    if (all.desk == desk) {
+                      all.ctime = all.ctime ? all.ctime : "";
+                      // all.utime = all.utime ? all.utime : "";
+                      all.user = all.user ? all.user : "空";
+                      if (all.ctime) {
+                        all.ctime = new Date(all.ctime + " +0800").format("yyyy-MM-dd")
+                      }
+                      tmpOneDesk.push(all)
+                    }
+                  })
+                } else {
+                  tmpOneDesk = []
+                }
+                thisLine.push(tmpOneDesk)
+              })
+              tmp.push(thisLine)
+            })
+            this.position = tmp
+            this.layoutResize()
+            console.log(res)
+            console.log(this.position)
+
+
+          } else {
+            this.$message.error("请求失败，请联系管理员！")
+          }
+        })
+      },
+
+      //获取人员信息列表
+      getPersonList() {
+        let formData = new FormData();
+        formData.append('select', 'select')
+        this.loading = true;
+        this.postInfo('/person/', formData, res => {
+          if (res) {
+            console.log(res)
+            res.forEach((item, index) => {
+              item.index = index + 1;
+              for (let key in item) {
+                if (!item[key]) {
+                  item[key] = ''
+                }
+              }
+            })
+            this.personList = res;
+            this.loading = false;
+          } else {
+            this.$message.error("获取数据失败，联系管理员！")
+          }
+        })
+      },
+      //添加人员信息
+      submitAdd() {
+        this.loading2 = true;
+        let form = new FormData()
+        // form.append('select', 'add');
+        if (this.dialogForm.ctime == '') {
+          this.dialogForm.ctime = new Date().format("yyyy-MM-dd");
+        }
+        for (let key in this.dialogForm) {
+          if (key == 'chinesename' || key == 'name' || key == 'id' || key == 'username' || key == 'job.id' || key == 'utime' || key == 'status') {
+            continue
+          }
+          if(key == 'first' || key == 'second' || key == 'mail' || key == 'mobile'){
+            this.dialogForm[key].replace(/\s/g, '')
+          }
+          form.append(key, this.dialogForm[key])
+        }
+        this.postInfo('/person/add', form, res => {
+          if (res) {
+            console.log(res)
+            this.loading2 = false;
+            this.showDialog = false;
+            this.$message.success(this.isAdd ? "新增成功" : "修改成功")
+            this.getPersonList()
+          } else {
+            this.$message.error("操作失败，联系管理员！")
+          }
+
+        })
+      },
+      //编辑人员信息
+      editPerson(value) {
+        this.isAdd = false;
+        this.showDialog = true;
+        this.dialogForm = JSON.parse(JSON.stringify(value));
+        //处理邮箱数据显示 去掉@后部分
+        let index = this.dialogForm.mail.indexOf('@')
+        this.dialogForm.mail = this.dialogForm.mail.slice(0, index)
+        //若日期不为空 格式化日期
+        // if(this.dialogForm.ctime){
+        //   this.dialogForm.ctime = new Date(this.dialogForm.ctime).format('yyyy-MM-dd')
+        // }
+        if (this.dialogForm.utime) {
+          this.dialogForm.utime = new Date(this.dialogForm.utime).format('yyyy-MM-dd')
+        }
+        if (this.dialogForm.birthday) {
+          this.dialogForm.birthday = new Date(this.dialogForm.birthday).format('yyyy-MM-dd')
+        }
+
+      },
+      submitEdit() {
+        if (this.dialogForm.utime == null) {
+          this.dialogForm.utime = '';
+        }
+        let form = new FormData()
+        // form.append('select', 'update');
+        form.append('id', this.dialogForm.id)
+        form.append('mobile', this.dialogForm.mobile)
+        form.append('utime', this.dialogForm.utime)
+        form.append('device', this.dialogForm.device)
+        form.append('status', this.dialogForm.status)
+        form.append('personremark', this.dialogForm.personremark)
+        form.append('jid', this.dialogForm.jid)
+        form.append('remark', this.dialogForm.remark)
+        form.append('birthday', this.dialogForm.birthday)
+        form.append('mail', this.dialogForm.mail + '@papayamobile.cn')
+
+        this.postInfo('/person/update', form, res => {
+          if (res) {
+            this.showDialog = false;
+            console.log(res)
+            this.$message.success(this.isAdd ? "新增成功" : "修改成功")
+            this.getPersonList()
+          } else {
+            this.$message.error("操作失败，联系管理员！")
+          }
+          this.loading2 = false;
+        })
+      },
+      deletePerson(id) {
+        let form = new FormData()
+        // form.append('select', 'del');
+        form.append('id', id);
+        this.postInfo('/person/delete', form, res => {
+          if(res){
+            this.getPersonList()
+            this.$message.success('删除成功！')
+          }else {
+            this.$message.error('删除失败！请联系管理员')
+          }
+          console.log(res);
+        })
+      },
+      //对话框取消操作
+      cancelDialog() {
+        this.showDialog = false;
+      },
+      //关闭对话框
+      closeDialog(formEl) {
+        //置空表单
+        this.$refs[formEl].resetFields()
+        // console.log(this.dialogForm)
+        for (let k in this.dialogForm) {
+          this.dialogForm[k] = '';
+        }
+        //默认选中 设备：公司电脑、状态 ：在职
+        this.dialogForm.device = 1;
+        this.dialogForm.status = 1;
+      },
+      //打开对话框
+      openDialog() {
+        //设置默认入职时间为当天
+        if (this.isAdd) {
+          this.dialogForm.ctime = new Date().format("yyyy-MM-dd");
+        }
+      },
+      //提交对话框
+      submitForm(formEl) {
+        console.log(formEl)
+        console.log(this.loading2)
+        this.$refs[formEl].validate((valid, fields) => {
+          if (valid) {
+            //新增
+            if (this.isAdd) {
+              this.submitAdd()
+            } else {
+              this.submitEdit()
+            }
+            //编辑
+          } else {
+            console.log('error submit!', fields)
+          }
+        })
+        // this.showDialog = false;
+      },
+      changeBooksIndex(index) {
+        this.pageIndex = index;
+      },
+      clickMenu(index) {
+        if (window.location.pathname != index) {
+          window.location.href = index
+        }
+      },
+      openMenu() {
+        this.fold = !this.fold
+      },
+      postInfo(url, form, callback) {
+        this.disabled = true
+        $.ajax({
+          "url": url,
+          "method": "POST",
+          contentType: false,
+          processData: false,
+          "data": form,
+          success: res => {
+            callback(res)
+          }
+        })
+      },
+      getInfo(url, callback){
+        this.disabled = true
+        $.ajax({
+          "url": url,
+          "method": "GET",
+          contentType: false,
+          processData: false,
+          success: res => {
+            callback(res)
+          }
+        })
+      },
+    },
+  }
+  const app = Vue.createApp(App);
+  app.use(ElementPlus);
+  app.mount("#app")
+</script>
+</body>
+
+</html>

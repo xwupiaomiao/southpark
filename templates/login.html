@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  {% include "head.html" %}
+</head>
+<style>
+  #app{
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .el-card{
+    width: 340px;
+  }
+</style>
+<body>
+  <div id="app">
+    <el-card shadow="always" :body-style="{ padding: '20px' }">
+      <div slot="header">
+        <h2>Login</h2>
+      </div>
+      <el-form>
+        <el-form-item>
+          <el-input v-model="username" placeholder="username"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-input v-model="password" placeholder="password" show-password @keyup.enter.native="login"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <div style="display: flex;justify-content: space-between;width: 100%;">
+            <el-button type="primary" style="width: 46%;" @click="login(0)">Login</el-button>
+            <el-button type="primary" style="width: 46%;" @click="login(1)">Login Admin</el-button>
+          </div>
+          
+        </el-form-item>
+        <el-form-item v-if="error" size="mini">
+          <!--{% raw %}-->
+          <span style="color: #f56c6c">
+            {{error}}
+          </span>
+          <!--{% endraw %}-->
+        </el-form-item>
+      </el-form>
+    </el-card>
+  </div>
+  <script>
+    const App = {
+      data(){
+        return {
+          username: '',
+          password: '',
+          error:'',
+          toPageStatus: 0
+        }
+      },
+      mounted() {
+      },
+      methods: {
+        login(status){
+          this.toPageStatus = status;
+          var form = new FormData();
+          form.append("username", this.username)
+          form.append("password", this.password)
+          this.postInfo('/login', form)
+        },
+        postInfo(url, form){
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              if(res == "success"){
+                window.location.href = this.toPageStatus ? '/admin/' : '/'
+              }else{
+                this.error = res
+              }
+              
+            }
+          })
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

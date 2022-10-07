@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 100%;
+  }
+  .el-button+.el-button {
+    margin-left: 20px !important;
+  }
+  .table-warp{
+    height: calc(100vh - 430px);
+    margin: 15px 0;
+  }
+</style>
+<body>
+  <div id="app">
+    <el-container >
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      <el-container >
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="游戏管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div style="margin-bottom: 10px">
+              <span style="font-size: 14px;line-height: 32px">游戏链接&nbsp;&nbsp;</span>
+              <el-select v-model="selectGameModules" filterable clearable placeholder="选择模块" @change="changeSelectResources">
+                <el-option
+                  v-for="item in modules"
+                  :key="item.name"
+                  :label="item.name"
+                  :value="item.name"
+                />
+              </el-select>
+              <el-select v-model="selectGameResources" filterable clearable placeholder="选择资源"  @change="joinUrl">
+                <el-option
+                  v-for="item in waitSelectResources"
+                  :key="item.name"
+                  :label="item.name"
+                  :value="item.name"
+                />
+              </el-select>
+              <el-button style="margin-left: 20px" v-show="testUrl" @click="jump(testUrl)">测试链接</el-button>
+              <el-button v-show="proUrl" @click="jump(proUrl)">正式链接</el-button>
+            </div>
+            <div>
+              <span style="font-size: 14px;line-height: 32px">项目链接&nbsp;&nbsp;</span>
+              <el-select
+                v-model="zoneinfo_id"
+                filterable
+                clearable
+                placeholder="选择项目"
+                @change="getProjectLangList()"
+              >
+                <el-option
+                  v-for="item in projectList"
+                  :key="item.zoneinfo_id"
+                  :label="item.name"
+                  :value="item.zoneinfo_id"
+                >
+                </el-option>
+              </el-select>
+              <el-select
+                v-if="zoneinfo_id"
+                v-model="projectLang"
+                filterable
+                clearable
+                placeholder="选择语言"
+              >
+                <el-option
+                  v-for="item in zoneList"
+                  :key="item.site"
+                  :label="item.chname"
+                  :value="item.site"
+                >
+                </el-option>
+              </el-select>
+              <!--{% raw %}-->
+              <template v-if="projectLang&&zoneinfo_id">
+                <span style="font-size: 14px;line-height: 32px">&nbsp;&nbsp;&nbsp;测试链接：</span><el-link style="margin-right: 25px;" type="primary" :underline="false" :href=`${projectUrl}${projectLang}.sp.com` target="_blank">{{ `${projectUrl}${projectLang}.sp.com` }}</el-link>
+              </template>
+              <!--{% endraw %}-->
+            </div>
+          </el-card>
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <el-tabs v-model="active" type="card" tab-position="top" @tab-change="tabChange">
+              <el-tab-pane label="游戏管理" name="engineer">
+                <el-row style="align-items: center;">
+                  <el-col :span="3">
+                    <el-button type="primary" size="small" @click="addGamesDialogVisible = true;">
+                      <el-icon>
+                        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                      </el-icon>
+                    </el-button>
+                  </el-col>
+                </el-row>
+                <el-table :data="updateHistory" stripe>
+                  <el-table-column prop="commit_id" label="当前 commit id" width="370px"></el-table-column>
+                  <el-table-column prop="ctime" label="更新时间" :formatter="timeFormate" width="180px"> </el-table-column>
+                  <el-table-column prop="username" label="操作人" width="80px"></el-table-column>
+                  <el-table-column prop="project" width="140px" label="服务器名"></el-table-column>
+                  <el-table-column label="环境" width="80px">
+                    <template #default="scope">
+                      <el-tag v-if="scope.row.environment == 1" type="danger" size="default"  effect="dark">正式</el-tag>
+                      <el-tag v-else-if="scope.row.environment == 0" type="success" size="default"  effect="dark">测试</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="250px">
+                    <template #default="scope">
+                      <!--{% raw %}-->
+                      <el-button v-if="scope.row.environment == 1 || scope.row.id == 1" type="primary" :disabled="scope.row.disabled" size="small" @click="update(scope.row.environment,scope.row.sid)">更新</el-button>
+                      <el-button v-if="scope.row.environment != 1" :disabled="scope.row.disabled" type="info" size="small" @click="dialogMsgVisible = true;current_pos = scope.row.environment;current_project=scope.row.sid">推送</el-button>
+                      <el-button style="margin-left: 20px;" type="warning" :disabled="scope.row.disabled" size="small" @click="dialogFormVisible = true;current_pos = scope.row.environment;current_project=scope.row.sid">回退</el-button>
+                      <!--{% endraw %}-->
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="状态" width="120px">
+                    <template #default="scope">
+                      <el-tag v-if="scope.row.status == 1" size="default"  effect="dark">更新或者回退中</el-tag>
+                      <el-tag v-else-if="scope.row.status == 2" type="success" size="default"  effect="dark">更新完成</el-tag>
+                      <el-tag v-else-if="scope.row.status == 3" type="warning" size="default"  effect="dark">回退完成</el-tag>
+                      <el-tag v-else-if="scope.row.status == 4" type="danger" size="default"  effect="dark">操作失败</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="remark" label="备注"></el-table-column>
+                </el-table>
+                <el-dialog
+                  title="游戏配置"
+                  v-model="addGamesDialogVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="gamesForm" label-width="130px" :inline="false" size="normal">
+                      <el-form-item label="服务器">
+                        <el-select v-model="gamesForm.servername" filterable clearable class="m-2" placeholder="请选择服务器">
+                          <el-option
+                            v-for="item in serverNameList"
+                            :key="item.id"
+                            :label="item.sname"
+                            :value="item.id"
+                          />
+                      </el-form-item>
+                      <el-form-item label="服务器环境">
+                        <el-select v-model="gamesForm.environment" filterable clearable  class="m-2" placeholder="请选择服务器环境">
+                          <el-option
+                            v-for="item in serverType"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                          />
+                      </el-form-item>
+                      <el-form-item label="Github地址">
+                        <el-input v-model="gamesForm.githuburl" placeholder="请输入github地址"></el-input>
+                      </el-form-item>
+                      <el-form-item label="公共游戏Github">
+                        <el-input v-model="gamesForm.pubgithuburl" placeholder="请输入公共游戏github地址"></el-input>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="setGames">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+              <el-tab-pane label="模块管理" name="modules">
+                <el-row style="align-items: center;">
+                  <el-col :span="3">
+                    <el-button type="primary" size="small" @click="addMoulesDialogVisible = true;">
+                      <el-icon>
+                        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                      </el-icon>
+                    </el-button>
+                  </el-col>
+                  <el-col :span="3" :offset="18">
+                    <el-input v-model="modulesSearch.name" clearable placeholder="搜索模块名"></el-input>
+                  </el-col>
+                </el-row>
+                <div class="table-warp">
+                  <el-table :data="handleModules.slice((this.modulesPage-1)*this.pageNum,this.modulesPage*this.pageNum)" border stripe height="100%">
+                    <el-table-column prop="name" width="200px" label="模块名"></el-table-column>
+                    <el-table-column prop="developer" width="100px" label="工程师"></el-table-column>
+                    <el-table-column prop="description" label="描述"></el-table-column>
+                    <el-table-column prop="ctime" :formatter="timeFormate" width="180px" label="修改时间"></el-table-column>
+                    <el-table-column label="操作" width="100px">
+                      <template #default="scope">
+                        <el-button type="primary" size="default" @click="addMoulesDialogVisible=true;modulesForm = scope.row">修改</el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+                <el-row>
+                  <el-col :span="12">
+                    <el-pagination style="float: left"
+                                   background
+                                   :currentPage="modulesPage"
+                                   layout="prev, pager, next"
+                                   :page-size="pageNum"
+                                   :total="handleModules.length"
+                                   @current-change="changeModulesIndex"
+                    >
+                    </el-pagination>
+                  </el-col>
+                </el-row>
+                <el-dialog
+                  title="模块配置"
+                  v-model="addMoulesDialogVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="modulesForm" ref="modulesForm" label-width="130px" :inline="false" size="normal">
+                      <el-form-item label="模块名">
+                        <el-input v-model="modulesForm.name" placeholder="请输入模块名"></el-input>
+                      </el-form-item>
+                      <el-form-item label="工程师">
+                        <el-input v-model="modulesForm.developer" placeholder="请输入工程师名字"></el-input>
+                      </el-form-item>
+                      <el-form-item label="备注">
+                        <el-input v-model="modulesForm.remark" placeholder="请输入备注"></el-input>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="setModules">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+
+              </el-tab-pane>
+              <el-tab-pane label="资源管理" name="resources">
+                <el-row style="align-items: center;">
+                  <el-col :span="3">
+                    <el-button type="primary" size="small" @click="addResourcesDialogVisible = true;">
+                      <el-icon>
+                        <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                      </el-icon>
+                    </el-button>
+                  </el-col>
+                  <el-col :span="3" :offset="18">
+                    <el-input v-model="grSearch.name" clearable placeholder="搜索资源名"></el-input>
+                  </el-col>
+                </el-row>
+                <div class="table-warp">
+                  <el-table :data="handleGr.slice((this.grPage-1)*this.pageNum,this.grPage*this.pageNum)" border stripe height="100%">
+                    <el-table-column prop="name" width="400px" label="资源名"></el-table-column>
+                    <el-table-column prop="modules" width="200px" label="模块名"></el-table-column>
+                    <el-table-column prop="design" width="100px" label="设计师"></el-table-column>
+                    <el-table-column prop="description" label="描述"></el-table-column>
+                    <el-table-column prop="ctime" :formatter="timeFormate" width="180px" label="修改时间"></el-table-column>
+                    <el-table-column label="操作" width="100px">
+                      <template #default="scope">
+                        <el-button type="primary" size="default" @click="addResourcesDialogVisible=true;setResourcesValue(scope.row)">修改</el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+                <el-row>
+                  <el-col :span="12">
+                    <el-pagination style="float: left"
+                                   background
+                                   :currentPage="grPage"
+                                   layout="prev, pager, next"
+                                   :page-size="pageNum"
+                                   :total="handleGr.length"
+                                   @current-change="changeGrIndex"
+                    >
+                    </el-pagination>
+                  </el-col>
+                </el-row>
+
+                <el-dialog
+                  title="资源配置"
+                  v-model="addResourcesDialogVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="resourceForm" ref="resourceForm" label-width="130px" :inline="false" size="normal">
+                      <el-form-item label="资源名">
+                        <el-input v-model="resourceForm.name" placeholder="请输入资源名"></el-input>
+                      </el-form-item>
+                      <el-form-item label="模块">
+                        <el-select v-model="resourceForm.mid" filterable clearable placeholder="选择游戏模块">
+                          <el-option
+                            v-for="item in modules"
+                            :key="item.id"
+                            :label="item.name"
+                            :value="item.id"
+                          />
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="设计师">
+                        <el-input v-model="resourceForm.design" placeholder="请输入设计师名字"></el-input>
+                      </el-form-item>
+                      <el-form-item label="备注">
+                        <el-input v-model="resourceForm.remark" placeholder="请输入备注"></el-input>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="setResources">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+              </el-tabs>
+          </el-card>
+          
+          <el-dialog v-model="dialogFormVisible" title="提交 Commit Id">
+            <el-input v-model="commit_id" placeholder="输入commit id" size="small" clearable></el-input>
+            <template #footer>
+              <el-button @click="dialogFormVisible = false;commit_id = '';current_project=''">取消</el-button>
+              <el-button type="primary" :disabled="commit_id == ''" @click="dialogFormVisible = false;back()">确认</el-button>
+            </template>
+          </el-dialog>
+
+          <el-dialog v-model="dialogMsgVisible" title="推送信息">
+            <el-input v-model="commit_msg" placeholder="输入推送信息" size="small" clearable></el-input>
+            <template #footer>
+              <el-button @click="dialogMsgVisible = false;commit_msg = '';current_project=''">取消</el-button>
+              <el-button type="primary" :disabled="commit_msg == ''" @click="dialogMsgVisible = false;push()">确认</el-button>
+            </template>
+          </el-dialog>
+          
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份 
+        "d+": this.getDate(),                    //日 
+        "h+": this.getHours(),                   //小时 
+        "m+": this.getMinutes(),                 //分 
+        "s+": this.getSeconds(),                 //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data(){
+        return {
+          current_page: "/game/",
+          fold: true,
+          active: "engineer",
+          gameresources: [],
+          waitSelectResources: [],
+          selectGameResources: '',
+          selectGameModules: '',
+          serverNameList: [], //所有的服务器名字
+          modules: [],
+          testUrl: '',
+          proUrl: '',
+          commit_id: "",
+          webStatus: false,
+          dialogFormVisible: false,
+          disabled: false,
+          dialogMsgVisible: false,
+          commit_msg: "",
+          timer: '',
+          current_pos: 0,
+          current_project: "",
+          updateHistory: [],
+          gamesForm :{},
+          //----
+          modulesForm: {},
+          addMoulesDialogVisible: false,
+          addGamesDialogVisible: false,
+          resourceForm: {},
+          addResourcesDialogVisible: false,
+          disabled: false,
+          projectList:[], //项目列表
+          zoneList:[],  //域名列表
+          zoneinfo_id:null, //项目域名id
+          projectLang:null, //项目语言
+          projectUrl:null,  //项目url
+          modulesPage : 1,
+          pageNum : 20,
+          grPage : 1,
+          modulesSearch : {
+            name : '',
+          },
+          grSearch : {
+            name : '',
+          },
+          serverType: [
+            { 
+              value: 1,
+              label: "正式"
+            },
+            {
+              value: 0,
+              label: "测试"
+            }
+        ]
+        }
+      },
+      mounted() {
+        // 项目名 环境 commitID
+        this.getInfo();
+        this.getAllGame();
+        this.getAllModels();
+        this.getProjectList();
+        this.getAllServerName();
+      },
+      computed : {
+        handleModules(){
+          return this.modules.filter(item => {
+            return item.name.includes(this.modulesSearch.name.trim())
+          })
+        },
+        handleGr(){
+          return this.gameresources.filter(item => {
+            return item.name.includes(this.grSearch.name.trim())
+          })
+        }
+      },
+      methods: {
+        tabChange(){
+          this.modulesPage = 1;
+          this.grPage = 1;
+        },
+        changeModulesIndex(index){
+          this.modulesPage = index;
+        },
+        changeGrIndex(index){
+          this.grPage = index;
+        },
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        //跳转
+        jump(url){
+          window.open(url);
+        },
+        //获取项目列表
+        getProjectList() {
+          $.post('/game/',{
+            select:'project'
+          },res => {
+            
+            this.projectList = res;
+          })
+        },
+        getAllServerName(){
+          $.post('/game/',{
+            select:'server',
+          },res => {
+            this.serverNameList = res;
+          })
+        },
+        getProjectLangList(){
+          $.post('/game/',{
+            select:'project',
+            zoneinfo_id:this.zoneinfo_id
+          },res => {
+            this.projectLang = null;
+            this.projectUrl = res[0].url;
+            // for (let i = 0;i < )
+            this.zoneList = res;
+          })
+        },
+        back(){
+          var environment = this.current_pos;
+          if(environment){
+            if(!this.commit_id){
+              this.$message.error("请输入 commit ID！")
+              return
+            }
+            if(!this.current_project){
+              this.$message.error("未获取到项目信息！")
+              return
+            }
+          }
+          this.disabledProject();
+          var form = new FormData();
+          form.append("data", JSON.stringify({
+            project: this.current_project,
+            commit_id: this.commit_id,
+            branch: environment ? "main" : "develop",
+            environment: environment
+          }))
+          this.postInfo('/game/roback', form, res => {
+            this.disabled = false
+            if(res == "success"){
+              this.$message.success("更新成功！")
+            }else{
+              this.$message.error(res)
+            }
+            this.getInfo()
+          })
+        },
+        closeDialog(){
+          this.gamesForm = {}
+          this.modulesForm = {}
+          this.resourceForm = {}
+          this.addMoulesDialogVisible = false;
+          this.addResourcesDialogVisible = false;
+          this.addGamesDialogVisible = false;
+        },
+        // 新增或修改模块
+        setModules(){
+          var form = new FormData();
+          for(var key in this.modulesForm){
+            form.append(key != 'id' ? key : 'mid', this.modulesForm[key])
+          }
+          this.$message.success("请求发送成功！")
+          this.postInfo('/game/addmodules', form, res => {
+            if(res == "success"){
+              this.$message.success("操作成功！")
+              this.closeDialog();
+              this.getAllModels()
+            }else{
+              this.$message.error("添加失败，已存在！")
+            }
+          })
+        },
+        // 设置值
+        setResourcesValue(resources){
+          this.resourceForm = resources;
+          this.resourceForm.mid = this.modules.filter(x => x.name == resources.modules)[0].id
+        },
+        // 新增或修改资源
+        setResources(){
+          var form = new FormData();
+          for(var key in this.resourceForm){
+            form.append(key != 'id' ? key : 'rid', this.resourceForm[key])
+          }
+          this.$message.success("请求发送成功！")
+          this.postInfo('/game/addresouces', form, res => {
+            if(res == "success"){
+              this.$message.success("操作成功！")
+              this.closeDialog();
+              this.getAllGame()
+            }else{
+              this.$message.error("添加失败，已存在！")
+            }
+          })
+        },
+        // 新增游戏
+        setGames(){
+          var form = new FormData();
+          if(this.isALlNUll()){
+            this.$message.error("添加的游戏配置不能全为空");
+            return;
+          }
+          for(var key in this.gamesForm){
+            if(key === "githuburl" || key === "pubgithuburl"){
+              console.log(!this.isGithubUrl(this.gamesForm[key]), this.gamesForm[key] != "")
+              if(!this.isGithubUrl(this.gamesForm[key]) || this.gamesForm[key] == ""){ // 可以为空但是格式要正确
+                this.$message.error("请输入正确的url地址");
+                return;
+              }
+            }
+            form.append(key != 'id' ? key : 'gid', this.gamesForm[key])
+          }
+          this.postInfo('/game/addgame', form, res => {
+            if(res == "success"){
+              this.$message.success("操作成功！")
+              this.gamesForm = {};
+              this.closeDialog();
+              this.getAllGame()
+            }else{
+              this.$message.error("添加失败，已存在！")
+            }
+          })
+        },
+        isALlNUll(){ // 如果所有数据都为空，将阻止本次请求
+          return Object.values(this.gamesForm).filter((item)=>{
+            return item != "";
+          }).length == 0;
+        },
+        // 校验是否是github地址
+        isGithubUrl(url){
+          const partten = /^git@github.com/;
+          return partten.test(url);
+        },
+        // 获取所有模块
+        getAllModels(){
+          var form = new FormData();
+          form.append("select", "modules");
+          this.postInfo("/game/", form, res => {
+            this.modules = res;
+          })
+        },
+        // 获取所有游戏名
+        getAllGame(){
+          var form = new FormData();
+          form.append("select", "resources");
+          this.postInfo("/game/", form, res => {
+            this.gameresources = res;
+            this.gameresources.forEach(x => x.modules = x['modules.name'])
+          })
+        },
+        // 获取测试以及正式链接
+        changeSelectResources(){
+          var proform = new FormData();
+          proform.append("select", "url");
+          proform.append("modules", this.selectGameModules);
+          this.postInfo("/game/", proform, res => {
+            this.waitSelectResources = res
+          })
+        },
+        // 拼接url
+        joinUrl(){
+          this.testUrl = `http://game.sp.com/${this.selectGameModules}/?name=${this.selectGameResources}`;
+          this.proUrl =  `https://bunnystorybook.com/game/public/${this.selectGameModules}/?name=${this.selectGameResources}`;
+        },
+        // 禁止二次点击
+        disabledProject(){
+          this.updateHistory.forEach(item => {
+            if(item.project == this.current_project){
+              item.disabled = true
+            }
+          })
+        },
+        update(pos, project){
+          console.log(pos,project)
+          // 更新
+          this.current_project = project;
+          this.disabledProject();
+          var form = new FormData();
+          form.append("data", JSON.stringify({
+            project,
+            commit_id: "update",
+            branch: pos ? "origin/main" : "origin/develop",
+            environment: pos
+          }))
+          this.postInfo('/game/update', form, res => {
+            this.disabled = false
+            if(res == "success"){
+              this.$message.success("更新成功！")
+            }else{
+              this.$message.error(res)
+            }
+            this.getInfo()
+          })
+        },
+        push(){
+          if(this.commit_msg.replace(/\s/g, '') == ''){
+            this.$message.error("请输入本次推送的介绍！")
+            return
+          }
+          // 推送
+          let project = this.current_project;
+          let pos = this.current_pos;
+          // this.current_project = project;
+          this.disabledProject();
+          var form = new FormData();
+          form.append("data", JSON.stringify({
+            project,
+            commit_id: "push",
+            branch: pos ? "origin/main" : "origin/develop",
+            environment: pos,
+            msg: this.commit_msg
+          }))
+          this.postInfo('/game/', form, res => {
+            this.disabled = false
+            console.log(res)
+            if(res == "success"){
+              this.$message.success("更新成功！")
+            }else{
+              this.$message.error(res)
+            }
+            this.getInfo()
+          })
+        },
+        getInfo(){
+          var form = new FormData()
+          // form.append("select", "select");
+          this.postInfo('/game/', form, res => {
+            clearTimeout(this.timer);
+            var isReGet = false
+            if(res){
+              console.log(res)
+              res.forEach(item => {
+                item.project = item.sname // project 对应 数据的 sname
+                if(item.status == 1){
+                  item.disabled = true
+                  isReGet = true
+                }else{
+                  item.disabled = false
+                }
+              })
+              this.updateHistory = res
+
+              if(isReGet){
+                this.timer = setTimeout(() => {
+                  this.getInfo()
+                }, 5000);
+              }
+            }
+          })
+        },
+        postInfo(url, form, callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chpwd</title>
+  {% include "head.html" %}
+</head>
+<style>
+  #app{
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .el-card{
+    width: 340px;
+  }
+</style>
+<body>
+  <div id="app">
+    <el-card shadow="always" :body-style="{ padding: '20px' }">
+      <div slot="header">
+        <h2>密码修改</h2>
+      </div>
+      <el-form>
+        <el-form-item>
+          <el-input v-model="username" placeholder="用户名"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-input v-model="password" placeholder="当前密码" show-password></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-input v-model="newpassword" placeholder="新密码" show-password></el-input>
+        </el-form-item>
+        <el-form-item>
+          <div style="display: flex;justify-content: space-between;width: 100%;">
+            <el-button type="primary" style="width: 46%;" @click="changePwd">确定修改密码</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item v-if="error" size="mini">
+          <!--{% raw %}-->
+          <span style="color: #f56c6c">
+            {{error}}
+          </span>
+          <!--{% endraw %}-->
+        </el-form-item>
+      </el-form>
+    </el-card>
+  </div>
+  <script>
+    const App = {
+      data(){
+        return {
+          username: '',
+          password: '',
+          newpassword: '',
+          error:'',
+          toPageStatus: 0
+        }
+      },
+      mounted() {
+      },
+      methods: {
+        changePwd(){
+          if(this.username.trim() == ''){
+            this.$message.error("用户名不能为空")
+          }
+          if(this.password.trim() == ''){
+            this.$message.error("当前密码不能为空")
+          }
+          if(this.newpassword.trim() == ''){
+            this.$message.error("新密码不能为空")
+          }
+          var form = new FormData()
+          form.append("username", this.username)
+          form.append("password", this.password)
+          form.append("newpassword", this.newpassword)
+          this.postInfo('/chpwd', form, res => {
+            if(res != false){
+              this.$message.success("密码修改成功！5s 后自动跳转！")
+              this.username = "";
+              this.password = "";
+              this.newpassword = "";
+              setTimeout(() => {
+                window.location.href = "/login"
+              }, 5000);
+            }else{
+              this.$message.error("密码修改失败：" + res)
+            }
+          })
+        },
+        postInfo(url, form, callback){
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

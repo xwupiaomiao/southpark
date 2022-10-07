@@ -1,0 +1,69 @@
+<el-menu :default-active="current_page" :collapse="!fold" active-text-color="#ffd04b" background-color="#545c64"
+  :collapse-transition="false" text-color="#fff" router @select="clickMenu">
+  <el-menu-item index="/admin/" key="/admin/">
+    <el-icon>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+        <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+      </svg>
+    </el-icon>
+    <template #title>
+      <span>首页</span>
+    </template>
+  </el-menu-item>
+  <el-menu-item index="/admin/sites/" key="/admin/sites/">
+    <el-icon>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+        <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+      </svg>
+    </el-icon>
+    <template #title>
+      <span>项目管理</span>
+    </template>
+  </el-menu-item>
+  <el-menu-item index="/admin/domain/" key="/admin/domain/">
+    <el-icon>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+        <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+      </svg>
+    </el-icon>
+    <template #title>
+      <span>CDN管理</span>
+    </template>
+  </el-menu-item>
+  <el-sub-menu index="2">
+    <template #title>
+      <el-icon><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-ba633cb8=""><path d="M640 384v256H384V384h256zm64 0h192v256H704V384zm-64 512H384V704h256v192zm64 0V704h192v192H704zm-64-768v192H384V128h256zm64 0h192v192H704V128zM320 384v256H128V384h192zm0 512H128V704h192v192zm0-768v192H128V128h192z"></path></svg></el-icon>
+      <span>权限管理</span>
+    </template>
+    <el-menu-item index="/admin/author/project/" key="/admin/author/project/">
+      <el-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+          <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>项目权限管理</span>
+      </template>
+    </el-menu-item>
+    <el-menu-item index="/admin/author/role/" key="/admin/author/role/">
+      <el-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+          <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+        </svg>
+      </el-icon>
+      <template #title>
+        <span>角色管理</span>
+      </template>
+    </el-menu-item>
+  </el-sub-menu>
+  <el-menu-item index="/admin/uwsgi" key="/admin/uwsgi">
+    <el-icon>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+        <path fill="currentColor" d="M512 128 128 447.936V896h255.936V640H640v256h255.936V447.936z"></path>
+      </svg>
+    </el-icon>
+    <template #title>
+      <span>后台日志</span>
+    </template>
+  </el-menu-item>
+</el-menu>

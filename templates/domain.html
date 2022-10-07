@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domain</title>
+  {% include "head.html" %}
+</head>
+<!-- 
+  2. 限制前缀 <= 6 个字符
+  4. 匹配那个前缀
+  5. 点击后自动刷新， 5s
+ -->
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 100%;
+  }
+  .table-warp{
+    height: calc(100vh - 250px);
+  }
+</style>
+<body>
+  <div id="app">
+    <el-container >
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      <el-container >
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="域名管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <div slot="header">
+              <span>配置域名</span>
+              <el-button type="primary" size="small" style="margin-left: 20px;" @click="dialogTableVisible = true;">
+                <el-icon>
+                  <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                </el-icon>
+              </el-button>
+              <el-input style="width: 20%;min-width: 550px;float: right;" v-model="searchUrl"
+                @keyup.enter.native="getDomainList" @input="getDomainList" placeholder="搜索域名或添加人">
+                <template #prepend>
+                  <el-select v-model="selectSite" clearable @change="getDomainList" placeholder="Site" style="width: 150px">
+                    {% for k in sites_all %}
+                    <el-option label="{{k.site}}:{{k.chname}}" value="{{k.site}}"></el-option>
+                    {% endfor %}
+                  </el-select>
+                </template>
+              </el-input>
+            </div>
+            <div class="table-warp">
+              <br>
+              <el-table :data="siteList" border stripe height="100%">
+                <el-table-column v-loading="loading" label="域名">
+                  <template #default="scope">
+                    <!--{% raw %}-->
+                    <el-link type="primary" :underline="false" :href="'https://' + scope.row.url" target="_blank">{{scope.row.url}}</el-link>
+                    <!--{% endraw %}-->
+                  </template>
+                </el-table-column>
+                <el-table-column prop="site" label="站点" ></el-table-column>
+                <el-table-column prop="username" label="添加人" ></el-table-column>
+                <el-table-column prop="ctime" label="时间"></el-table-column>
+                <el-table-column label="状态">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.status == 1" size="error" size="default" effect="dark">Nginx配置异常，请联系管理员</el-tag>
+                    <el-tag v-else-if="scope.row.status == 2" type="danger" size="default"  effect="dark">CDN配置异常，请联系管理员</el-tag>
+                    <el-tag v-else-if="scope.row.status == 3" type="success" size="default"  effect="dark">配置完成</el-tag>
+                    <el-tag v-else-if="scope.row.status == 4" size="default"  effect="dark">正在配置</el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+              
+            </div>
+            <br>
+            <el-pagination
+              background
+              current-page="pageIndex"
+              @current-change="changeIndex"
+              layout="prev, pager, next"
+              :page-size="pagenum"
+              :total="total">
+            </el-pagination>
+          </el-card>
+
+          <el-dialog
+            title="域名配置"
+            v-model="dialogTableVisible"
+            width="50%">
+            <span>
+              <el-form :model="siteForm" ref="form" label-width="80px" :inline="false" size="normal">
+                <el-form-item label="项目选择">
+                  <el-radio-group v-model="siteForm.project" @change="changeSelectProject">
+                    <el-radio v-for="item in project" :key="item.domain" :label="item.url">
+                      <!--{% raw %}-->
+                      {{item.name}}
+                      <!--{% endraw %}-->
+                    </el-radio>
+                  </el-radio-group>
+                </el-form-item>
+                <el-form-item label="站点指向">
+                  <el-radio-group v-model="siteForm.site" @change="changeSelectSite">
+                    <el-radio v-for="item in currentSiteFile" :key="item.site" :label="item.site">
+                      <!--{% raw %}-->
+                      {{item.site}}({{item.chname}})
+                      <!--{% endraw %}-->
+                    </el-radio>
+                  </el-radio-group>
+                </el-form-item>
+                <el-form-item label="域名前缀">
+                  <el-input v-model="siteForm.addr" placeholder="输入域名前缀，例如：game"></el-input>
+                </el-form-item>
+                <el-form-item label="域名预览">
+                  <!--{% raw %}-->
+                  <el-link type="primary" :underline="false" href="" target="_blank">{{siteForm.addr + '.' + siteForm.domain}}</el-link>
+                  <!--{% endraw %}-->
+                </el-form-item>
+              </el-form>
+            </span>
+            <span slot="footer">
+              <el-button @click="closeDialog">Cancel</el-button>
+              <el-button type="primary" :disabled="!isUpload" @click="uploadDomain">OK</el-button>
+            </span>
+          </el-dialog>
+          
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    const App = {
+      data(){
+        return {
+          current_page: "/domain/",
+          fold: true,
+          dialogTableVisible: false,
+          project: [],
+          currentSiteFile: [],
+          isUpload: true,
+          siteForm: {
+            project: '',
+            site: '',
+            domain: '',
+            addr: ''
+          },
+          loading: false,
+          siteList: [],
+          pagenum: 25,
+          pageIndex: 1,
+          total: 0,
+          searchUrl: '',
+          selectSite: ''
+        }
+      },
+      mounted() {
+        var form = new FormData()
+        form.append("table", "project")
+        this.postInfo("/domain/", form, res => {
+          this.project = res;
+          this.project.forEach(ele => {
+            ele.domain = ele.name;
+            ele.url = ele.zone;
+          })
+        })
+        this.getDomainList();
+      },
+      methods: {
+        changeIndex(index){
+          this.pageIndex = index;
+          this.getDomainList();
+        },
+        getDomainList(){
+          this.loading = true;
+          var form = new FormData();
+          form.append("page", this.pageIndex);
+          form.append("total", this.pagenum);
+          form.append("table", "domaininfo");
+          form.append("search", this.searchUrl);
+          form.append("site", this.selectSite);
+          form.append("select", "select");
+          this.postInfo("/domain/", form, res => {
+            this.total = res[1].total
+            var isRef = false
+            res[0].forEach(ele => {
+              var date = new Date(ele.ctime + '+0800')
+              ele.ctime = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+              if(ele.status == 4){
+                isRef = true
+              }
+            })
+            this.siteList = res[0]
+            this.loading = false;
+            if(isRef){
+              setTimeout(() => {
+                this.getDomainList()
+              }, 5000);
+            }
+          })
+        },
+        clearData(){
+          for(var key in this.siteForm){
+            if(key != "addr"){
+              this.siteForm[key] = ""
+            }
+          }
+          this.currentSiteFile = ""
+        },
+        closeDialog(){
+          this.dialogTableVisible = false;
+          this.clearData();
+        },
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        changeSelectProject(url){
+          var form = new FormData()
+          form.append('table', 'domainzone')
+          form.append('domainame', url)
+          this.siteForm.domain = url;
+          this.postInfo('/domain/', form, res => {
+            this.currentSiteFile = res;
+          })
+        },
+        uploadDomain(){
+          this.isUpload = false;
+          var has = false;
+          for(var key in this.siteForm){
+            if(!this.siteForm[key] && key != 'addr' ){
+              this.$message.error("参数为空！")
+              has = true
+            }
+          }
+          
+          // 去掉前缀的所有空格
+          this.siteForm.addr = this.siteForm.addr.replace(/\s/g, '');
+          if(this.siteForm.addr.length > 6){
+            this.$message.error("前缀字符数大于 6 个")
+            has = true
+          }
+
+          var reg = /^[0-9a-zA-Z]*$/;
+          if(!reg.test(this.siteForm.addr)){
+            this.$message.error("前缀字符只能由字母和数字组成！")
+            has = true
+          }
+          var currentUrl = this.siteForm.addr + ( this.siteForm.addr ? '.' : '' ) + this.siteForm.domain;
+
+          if(has){
+            this.isUpload = true;
+            return
+          }
+
+          var form = new FormData()
+          form.append("table", "domaininfo")
+          form.append("method", "post")
+          form.append("project", this.siteForm.project.split('.')[0])
+          form.append("site", this.siteForm.site)
+          form.append("domainame", this.siteForm.domain)
+          form.append("addr", this.siteForm.addr.trim())
+          console.log(this.project, this.siteForm, this.project.filter(x => x.url == this.siteForm.domain))
+          form.append("zoneinfoid", this.project.filter(x => x.url == this.siteForm.domain)[0].id)
+          
+          this.postInfo('/domain/add', form, res => {
+            if(res == 'success'){
+              this.dialogTableVisible = false;
+              this.isUpload = true;
+              this.clearData();
+              this.$message.success("域名配置请求发送成功！")
+              setTimeout(() => {
+                this.getDomainList()
+              }, 5000);
+            }else{
+              this.$message.error("域名配置请求发送失败，域名已存在！")
+            }
+          })
+        },
+        postInfo(url, form, callback){
+          $.ajax({
+            url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>

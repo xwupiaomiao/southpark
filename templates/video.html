@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html {
+    font-family: url(./element-icons.ttf);
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .upload-demo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .table-warp{
+    height: calc(100vh - 731px);
+  }
+  .el-upload-list {
+    width: 100%;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <el-container>
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "menu.html" %}
+      </el-aside>
+      <el-container>
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="视频管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path fill="currentColor"
+                      d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z">
+                    </path>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b="">
+                    <path fill="currentColor"
+                      d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z">
+                    </path>
+                  </svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+              <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <el-main height="">
+
+          <el-card shadow="always" :body-style="{ padding: '10px' }" v-if="submitID">
+            <div slot="header">
+              <span>上传需要处理的文件</span>
+            </div>
+            <el-row :gutter="20">
+              <el-col :span="12" :offset="0">
+                <el-form :model="form" ref="form" style="min-width: 40%;" label-width="180px" :inline="false"
+                  size="small">
+                  <el-form-item label="视频类型">
+                    <el-select
+                      v-model="form.site"
+                      placeholder="选择视频类型"
+                      filterable
+                      style="width: 100%;"
+                      clearable
+                    >
+                      <el-option label="toy视频" :value="1"></el-option>
+                      <el-option label="动画视频" :value="2"></el-option>
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="Youtube ID" prop="">
+                    <el-input v-model="form.youtube_id"></el-input>
+                  </el-form-item>
+                  <el-form-item label="标题" prop="">
+                    <el-input v-model="form.title"></el-input>
+                  </el-form-item>
+                  <el-form-item label="标签" prop="">
+                    <el-input v-model="form.tag"></el-input>
+                  </el-form-item>
+                  <el-form-item label="分类" prop="">
+                    <el-input v-model="form.category"></el-input>
+                  </el-form-item>
+                  <el-form-item label="类别" prop="">
+                    <el-select
+                      v-model="form.cat_id"
+                      placeholder="选择视频类别"
+                      filterable
+                      style="width: 100%;"
+                      clearable
+                    >
+                      <el-option v-for="item in videoCatList" :label="item.cat" :value="item.id"></el-option>
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="">
+                    <el-button type="primary" :disabled="!isUpload && isLoop" size="default" style="width: 100%;"
+                      @click="runScripts('form')">上传</el-button>
+                  </el-form-item>
+
+                </el-form>
+              </el-col>
+              <el-col :span="12" :offset="0">
+                <el-upload class="upload-demo" drag ref="upload" action="/video/upload" multiple :limit="1"
+                  style="min-width: 40%;" :on-success="success" :before-upload="beforeUpload">
+                  <el-icon class="el-icon--upload">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                      <path fill="currentColor"
+                        d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.808 239.808 0 0 1 512 192a239.872 239.872 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6H544z">
+                      </path>
+                    </svg>
+                  </el-icon>
+                  <div class="el-upload__text">
+                    拖动文件上传或<em>点击这里上传</em>
+                  </div>
+                  <template #tip>
+                    <div class="el-upload__tip" style="width: 100%;text-align:center">
+                      只允许上传视频文件（mp4/mov）
+                    </div>
+                  </template>
+                </el-upload>
+              </el-col>
+            </el-row>
+          </el-card>
+
+          <br>
+          <el-card shadow="always" :body-style="{ padding: '10px' }">
+            <div slot="header">
+              <!--{% raw %}-->
+              <span>视频列表</span>
+              <!--{% endraw %}-->
+            </div>
+            <div class="table-warp">
+              <el-table :data="currentList" style="width: 100%" size="small" height="100%">
+                <el-table-column prop="id" label="ID" width="50"></el-table-column>
+                <el-table-column prop="title" label="标题" width="300"></el-table-column>
+                <el-table-column prop="tag" label="标签" ></el-table-column>
+                <el-table-column prop="cat" label="类别" width="300"></el-table-column>
+                <el-table-column prop="category" label="分类" width="300"></el-table-column>
+                <el-table-column label="预览链接" width="200">
+                  <template #default="scope">
+                    <!--{% raw %}-->
+                    <el-link type="primary" :href="scope.row.testurl" target="_blank">{{scope.row.testurl}}</el-link>
+                    <!--{% endraw %}-->
+                  </template>
+                </el-table-column>
+                <el-table-column prop="ctime" label="时间" width="150"></el-table-column>
+                <el-table-column prop="username" label="上传人" width="100"></el-table-column>
+                <el-table-column prop="status" label="状态" width="100">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.status == 1" size="default" effect="dark">正在压缩</el-tag>
+                    <el-tag v-else-if="scope.row.status == 2" type="success" size="default" effect="dark">上传到云端中</el-tag>
+                    <el-tag v-else-if="scope.row.status == 3" type="warning" size="default" effect="dark">已上传</el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <el-pagination
+              background
+              :current-page="page"
+              @current-change="changeCurrentPage"
+              layout="prev, pager, next"
+              :page-size="10"
+              :total="total">
+            </el-pagination>
+          </el-card>
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    const App = {
+      data() {
+        return {
+          current_page: "/video/",
+          fold: true,
+          ws: null,
+          form: {
+            title: "",
+            youtube_id: '',
+            tag: '',
+            category: '',
+            site:null,
+            cat_id:null,
+          },
+          gameVideoForm: {
+            title: "",
+            gameid: ""
+          },
+          gameVideoFormRule: {
+            title: [{
+              required: true,
+              message: "请输入视频标题",
+              trigger: "blur"
+            }],
+            gameid: [{
+              required: true,
+              message: "请输入 game id",
+              trigger: "blur"
+            }]
+          },
+          filename: "",
+          resolution: '',
+          log: "",
+          isUpload: false,
+          videoList: [],
+          isLoop: false,
+          total: 0,
+          currentList: [],
+          pagenum: 10,
+          page:1,
+          videoCatList:[], //视频类别列表
+          submitID:true,
+        }
+      },
+      mounted() {
+        this.getVideo()
+        this.getVideoCat();
+      },
+      methods: {
+        checkupload(){
+          this.removeData();
+          this.getVideo();
+        },
+        //获取视频类别
+        getVideoCat(){
+          var form = new FormData();
+          form.append("table", "videocat")
+          $.ajax({
+            url: "/video/",
+            method: "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              this.videoCatList = res;
+            }
+          })
+        },
+        //翻页
+        changeCurrentPage(page) {
+          this.page = page;
+          this.getVideo();
+        },
+        getVideo() {
+          var form = new FormData();
+          form.append("page", this.page)
+          form.append("total", "10")
+          form.append("table","video")
+          $.ajax({
+            url: "/video/",
+            method: "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              this.isLoop = false;
+              res[0].forEach(ele => {
+                var date = new Date(ele.ctime + '+0800')
+                ele.ctime = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+                if (!this.isLoop && ele.status != 2) {
+                  this.isLoop = true
+                }
+              })
+              this.videoList = res[0];
+              this.total = res[1].total;
+              this.currentList = this.videoList.slice(0, this.pagenum)
+              if (this.isLoop) {
+                setTimeout(() => {
+                  this.getVideo()
+                }, 20000);
+              }
+            }
+          })
+        },
+        clickMenu(index) {
+          if (window.location.pathname != index) {
+            window.location.href = index
+          }
+        },
+        openMenu() {
+          this.fold = !this.fold
+        },
+        removeData() {
+          this.submitID = false;
+          for (var key in this.form) {
+            this.form[key] = ''
+          }
+          for (var key in this.gameVideoForm) {
+            this.gameVideoForm[key] = ''
+          }
+          this.filename = null;
+          this.$refs.upload.clearFiles()
+          setTimeout(()=>{
+            this.submitID = true;
+          },100)
+        },
+        success() {
+          this.isUpload = true;
+          this.$message.success("上传成功！")
+        },
+        changeIndex(index) {
+          this.currentList = this.videoList.slice((index - 1) * this.pagenum, index * this.pagenum)
+        },
+        runScripts(formName) {
+          if(formName){
+            this.$refs[formName].validate((valid) => {
+              if(!valid){
+                return false
+              }
+            })
+          }
+
+          var url = "/video/upload";
+
+          this.isUpload = true;
+          // 根据情况切换压缩后的文件名 以及 数据
+          var zipFilename = this.form.youtube_id + ".mp4"
+          var data = this.form
+          
+
+          // 日志记录
+          var formdata = new FormData()
+          formdata.append("select", "data")
+          formdata.append("data", JSON.stringify({
+            script: `cd video/upload && ffmpeg -i '${this.filename.replace(/\s/g, "_")}' -s 1280*720 -b:v 1.5M ../${this.form.site==1?"toyvideo":"animationvideo"}/${zipFilename} -y`,
+            data,
+            filename: this.filename,
+            zipname: zipFilename,
+            site:this.form.site
+          }))
+          
+          $.ajax({
+            url,
+            "method": "POST",
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            "data": formdata,
+            success: result => {
+              if (result == "success") {
+                this.$message.success("上传成功, 等待处理完成！")
+                this.removeData()
+                this.getVideo()
+              } else {
+                this.$message.error("上传失败或者超时，请联系管理员！")
+              }
+            }
+          }).then(() => {
+            this.isUpload = false
+          })
+        },
+        beforeDestroy() {
+          this.ws.close()
+        },
+        beforeUpload(file) {
+          var FileExt = file.name.replace(/.+\./, "")
+          if (!(FileExt.toLowerCase().indexOf('mov') > -1 || FileExt.toLowerCase().indexOf('mp4') > -1)) {
+            this.$message({
+              type: 'warning',
+              message: '只允许上传mov、mp4文件！'
+            })
+            return false
+          }
+
+          if (!this.form.youtube_id && this.tabActive == "toyvideo") {
+            this.$message({
+              type: 'warning',
+              message: '请先填写视频youtube_id！'
+            })
+            return false
+          }
+
+          if (file.name.indexOf(" ") > -1){
+            this.$message({
+              type: 'warning',
+              message: '文件名中不能包含空格'
+            })
+            return false
+          }
+          this.filename = file.name
+          return true
+        },
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+
+</html>

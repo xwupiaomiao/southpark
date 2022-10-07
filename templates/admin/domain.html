@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN配置</title>
+  {% include "head.html" %}
+</head>
+<style>
+  html{
+    font-family: url(./element-icons.ttf);
+  }
+  body,html{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #app,.el-container,.el-menu{
+    height: 100%;
+  }
+  .upload-demo{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn.btn-primary{
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .el-upload-list{
+    width: 100%;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <el-container >
+      <el-aside :width="fold ? '200px' : '60px'">
+        {% include "admin/menu.html" %}
+      </el-aside>
+      <el-container >
+        <el-header height="56px" style="display: flex;align-items: center;">
+          <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+            <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="CDN管理">
+              <template #icon>
+                <el-icon>
+                  <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" data-v-152cbb9b=""><path fill="currentColor" d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z"></path></svg>
+                </el-icon>
+              </template>
+            </el-page-header>
+            <form method="post" style="display: inline-block;" action="/loginout">
+                <button type="submit" class="btn btn-primary">注销</button>
+            </form>
+          </div>
+        </el-header>
+        <!--{% raw %}-->
+        <el-main height="">
+          <el-card shadow="always" :body-style="{ padding: '20px' }">
+            <el-tabs v-model="action"  tab-position="top">
+              <el-tab-pane label="CDN站点管理" name="cdn">
+                <el-button type="primary" size="small" style="margin: 0 0 10px;" @click="domainZoneDialogTableVisible = true;getZoneInfo();getSiteInfo(); ">
+                  <el-icon>
+                    <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                  </el-icon>
+                </el-button>
+                <br>
+                <el-table :data="domainZone" border stripe>
+                  <el-table-column prop="chname" label="语种"></el-table-column>
+                  <el-table-column prop="site" label="代号"></el-table-column>
+                  <el-table-column prop="zone" label="域名"></el-table-column>
+                  <el-table-column prop="account" label="账户"></el-table-column>
+                  <el-table-column prop="操作" >
+                    <template #default="scope">
+                      <el-button type="warning" size="small" @click="delDomainZone(scope.row.id)">删除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-dialog
+                  title="CDN主域名配置"
+                  v-model="domainZoneDialogTableVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="domainZoneForm" ref="domainZoneForm" label-width="130px" :inline="false" size="small">
+                      <el-form-item label="语种">
+                        <el-select v-model="domainZoneForm.sid" style="width: 100%;" placeholder="选择语种" clearable filterable @change="">
+                          <el-option v-for="item in siteInfo" :key="item.id" :label="item.chname" :value="item.id"></el-option>
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="域名">
+                        <el-select v-model="domainZoneForm.zid" style="width: 100%;" placeholder="选择域名" clearable filterable @change="">
+                          <el-option v-for="item in zoneInfo" :key="item.id" :label="item.zone" :value="item.id"></el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="addDomainZone">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+
+              <el-tab-pane label="CDN账户管理" name="cdnAccount">
+                <el-button type="primary" size="small" style="margin: 0 0 10px;" @click="cdnAccountDialogTableVisible = true;">
+                  <el-icon>
+                    <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                  </el-icon>
+                </el-button>
+                <br>
+                <el-table :data="cdnAccount" border stripe>
+                  <el-table-column prop="account" label="账户"></el-table-column>
+                  <el-table-column prop="account_id" label="账户id"></el-table-column>
+                  <el-table-column prop="api_key" label="Api Key"></el-table-column>
+                </el-table>
+                <el-dialog
+                  title="CDN账户配置"
+                  v-model="cdnAccountDialogTableVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="cdnAccountForm" ref="cdnAccountForm" label-width="130px" :inline="false" size="small">
+                      <el-form-item label="账户">
+                        <el-input v-model="cdnAccountForm.account" placeholder="请输入账户"></el-input>
+                      </el-form-item>
+                      <el-form-item label="账户ID">
+                        <el-input v-model="cdnAccountForm.account_id" placeholder="请输入账户ID"></el-input>
+                      </el-form-item>
+                      <el-form-item label="Api Key">
+                        <el-input v-model="cdnAccountForm.api_key" placeholder="请输入账户 Api Key"></el-input>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="addCdnAccount">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+
+              <el-tab-pane label="CDN主域名管理" name="cdnZone">
+                <el-button type="primary" size="small" style="margin: 0 0 10px;" @click="zoneInfoDialogTableVisible = true;getCDNAccount();">
+                  <el-icon>
+                    <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                  </el-icon>
+                </el-button>
+                <br>
+                <el-table :data="zoneInfo" border stripe>
+                  <el-table-column prop="zone" label="主域名"></el-table-column>
+                  <el-table-column prop="zone_id" label="域名ID"></el-table-column>
+                  <el-table-column prop="account" label="CDN账户"></el-table-column>
+                </el-table>
+                <el-dialog
+                  title="CDN主域名配置"
+                  v-model="zoneInfoDialogTableVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="zoneInfoForm" ref="zoneInfoForm" label-width="130px" :inline="false" size="small">
+                      <el-form-item label="主域名">
+                        <el-input v-model="zoneInfoForm.zone" placeholder="请输入主域名"></el-input>
+                      </el-form-item>
+                      <el-form-item label="域名ID">
+                        <el-input v-model="zoneInfoForm.zone_id" placeholder="请输入域名ID"></el-input>
+                      </el-form-item>
+                      <el-form-item label="cdn账户">
+                        <el-select v-model="zoneInfoForm.cdnaccount_id" style="width: 100%;" placeholder="选择cdn账户" clearable filterable @change="">
+                          <el-option v-for="item in cdnAccount"
+                            :key="item.id"
+                            :label="item.account"
+                            :value="item.id">
+                          </el-option>
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="选择Nginx配置">
+                        <el-select v-model="zoneInfoForm.project" style="width: 100%;" placeholder="选择Nginx配置" clearable filterable @change="changeNginxSelect">
+                          <el-option v-for="item in nginxProject"
+                            :key="item.name"
+                            :label="item.name"
+                            :value="item.name">
+                          </el-option>
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="Nginx配置文本" v-show="zoneInfoForm.nginx">
+                        <el-input
+                          v-model="zoneInfoForm.nginx"
+                          type="textarea"
+                          autosize
+                          placeholder="Please input"
+                        />
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="addZoneInfo">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+
+              <el-tab-pane label="本土化管理" name="location">
+                <el-button type="primary" size="small" style="margin: 0 0 10px;" @click="siteInfoDialogTableVisible = true;">
+                  <el-icon>
+                    <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                  </el-icon>
+                </el-button>
+                <br>
+                <el-table :data="siteInfo" border stripe>
+                  <el-table-column prop="chname" label="语种"></el-table-column>
+                  <el-table-column prop="site" label="代号"></el-table-column>
+                </el-table>
+                <el-dialog
+                  title="本土化配置"
+                  v-model="siteInfoDialogTableVisible"
+                  width="50%">
+                  <span>
+                    <el-form :model="siteInfoForm" ref="siteInfoForm" label-width="130px" :inline="false" size="small">
+                      <el-form-item label="代号">
+                        <el-input v-model="siteInfoForm.site" placeholder="请输入代号，例：us"></el-input>
+                      </el-form-item>
+                      <el-form-item label="语种">
+                        <el-input v-model="siteInfoForm.chname" placeholder="请输入语种，例：英语"></el-input>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" :disabled="!disabled" type="primary" @click="addSiteInfo">确定</el-button>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+
+              <el-tab-pane label="DNS管理" name="domain">
+                <el-button type="primary" size="small" style="margin: 0 10px 10px;" @click="domainCDNDialogTableVisible = true;">
+                  <el-icon>
+                    <svg class="icon" width="200" height="200" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" data-v-365b8594=""><path fill="currentColor" d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"></path></svg>
+                  </el-icon>
+                </el-button>
+                <el-button type="primary" size="small" style="margin: 0 0 10px;"  @click="domainCDNDialogTableVisible = true;domainCDNIsBulk = true">批量修改</el-button>
+                <br>
+                <el-table :data="domainCDN" border stripe>
+                  <el-table-column label="域名" prop="url"></el-table-column>
+                  <el-table-column label="IP" prop="newip">
+                    <template #default="scope">
+                      <span style="display: flex;">
+                        <span style="cursor: pointer;" v-if="!scope.row.edit" @click="scope.row.edit = 1;scope.row.modifyip = scope.row.newip">{{scope.row.newip}}</span>
+                        <span v-else>
+                          <el-input v-model="scope.row.modifyip" placeholder="请输入ip" size="small" clearable></el-input>
+                        </span>
+                        <el-button v-if="scope.row.edit" type="primary" style="margin-left: 5px;" size="small" @click="editDomainCDN(scope.row)">确认</el-button>
+                        <el-button v-if="scope.row.edit" type="danger" size="small" @click="scope.row.edit = 0">取消</el-button>
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Old IP" prop="oldip" ></el-table-column>
+                  <el-table-column label="代理" width="80px">
+                    <template #default="scope">
+                      <el-switch v-model="scope.row.proxy" :active-value="'true'" :inactive-value="'false'" @change="switchProxy(scope.row, scope.row.proxy)">
+                      </el-switch>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="100px">
+                    <template #default="scope">
+                      <el-popconfirm title="请确认删除!!!" @confirm="delDomainCDN(scope.row.id)">
+                        <template #reference>
+                          <el-button type="danger" size="small" @click="">删除</el-button>
+                        </template>
+                      </el-popconfirm>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-dialog
+                  title="DNS配置"
+                  v-model="domainCDNDialogTableVisible"
+                  @close="closeDialog"
+                  width="50%">
+                  <span>
+                    <el-form :model="domainCDNForm" ref="domainCDNForm" label-width="130px" :inline="false" size="small">
+                      <el-form-item label="url" v-if="!domainCDNIsBulk">
+                        <el-input v-model="domainCDNForm.hostname" placeholder="请输入前缀"></el-input>
+                      </el-form-item>
+                      <el-form-item label="域名">
+                        <el-select v-model="domainCDNForm.zoneinfoid" style="width: 100%;" placeholder="选择域名" clearable filterable @change="">
+                          <el-option v-for="item in zoneInfo" :key="item.id" :label="item.zone" :value="item.id"></el-option>
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="ip">
+                        <el-input v-model="domainCDNForm.ipaddress" placeholder="请输入 IP"></el-input>
+                      </el-form-item>
+                      <el-form-item label="代理">
+                        <el-switch v-model="domainCDNForm.proxy" :active-value="'true'" :inactive-value="'false'">
+                        </el-switch>
+                      </el-form-item>
+                    </el-form>
+                  </span>
+                  <span slot="footer">
+                    <br>
+                    <div style="display: flex;justify-content: space-between;width:100%">
+                      <el-button style="width: 47%;" @click="closeDialog">取消</el-button>
+                      <el-button style="width: 47%;" v-if="!domainCDNIsBulk" :disabled="!disabled" @click="addDomainCDN" type="primary">确定</el-button>
+                      <el-popconfirm v-else title="请确认修改!!!" @confirm="editDomainCDN">
+                        <template #reference>
+                          <el-button style="width: 47%;" :disabled="!disabled" type="primary">修改</el-button>
+                        </template>
+                      </el-popconfirm>
+                    </div>
+                  </span>
+                </el-dialog>
+              </el-tab-pane>
+
+
+            </el-tabs>
+            
+          </el-card>
+        </el-main>
+        <!--{% endraw %}-->
+      </el-container>
+    </el-container>
+  </div>
+  <script>
+    Date.prototype.format = function (fmt) {
+      var o = {
+        "M+": this.getMonth() + 1,                 //月份 
+        "d+": this.getDate(),                    //日 
+        "h+": this.getHours(),                   //小时 
+        "m+": this.getMinutes(),                 //分 
+        "s+": this.getSeconds(),                 //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    }
+    const App = {
+      data(){
+        return {
+          current_page: "/admin/domain/",
+          fold: true,
+          action: 'cdn',
+          domainZone: [],
+          domainZoneForm: {},
+          domainZoneDialogTableVisible: false,
+          cdnAccount: [],
+          cdnAccountForm: {},
+          cdnAccountDialogTableVisible: false,
+          zoneInfo: [],
+          zoneInfoForm: {},
+          zoneInfoDialogTableVisible: false,
+          domainCDN: [],
+          domainCDNForm: {
+            zoneinfoid: '',
+            ipaddress: '',
+            hostname: '',
+            proxy: 'true'
+          },
+          domainCDNIsBulk: false,
+          domainCDNDialogTableVisible: false,
+          siteInfo: [],
+          siteInfoForm: {
+            site: "",
+            chname: ""
+          },
+          siteInfoDialogTableVisible: false,
+          disabled: false,
+          nginxProject: []
+        }
+      },
+      mounted() {
+        this.getDomainZone();
+        this.getCDNAccount();
+        this.getZoneInfo();
+        this.getSiteInfo();
+        this.getNginxDomain();
+        this.getDomainCDN();
+      },
+      methods: {
+        clickMenu(index){
+          if(window.location.pathname != index){
+            window.location.href = index
+          }
+        },
+        openMenu(){
+          this.fold = !this.fold
+        },
+        timeFormate(row, column, cellValue, index){
+          return new Date(row[column.property] + "+0800").format("yyyy-MM-dd hh:mm:ss")
+        },
+        // ----
+        getDomainZone(){
+          var form = new FormData();
+          form.append("table","domainzone")
+          this.postInfo("/admin/domain/", form, res => {
+            this.domainZone = res;
+          })
+        },
+        addDomainZone(){
+          this.disabled = true
+          var form = new FormData();
+          for(var key in this.domainZoneForm){
+            form.append(key, this.domainZoneForm[key])
+          }
+          form.append("table", "domainzone")
+          this.$message.success("添加请求提交成功！")
+          this.postInfo("/admin/domain/add", form, res => {
+            if(res == "success"){
+              this.$message.success("添加成功！")
+              this.getDomainZone();
+              this.closeDialog();
+            }else{
+              this.$message.error("添加失败，请联系管理员！")
+            }
+            this.disabled = false
+          })
+        },
+        delDomainZone(id){
+          var form = new FormData();
+          form.append("did", id);
+          this.$message.success("删除请求提交成功！")
+          this.postInfo("/admin/domain/del", form, res => {
+            if(res == "success"){
+              this.$message.success("删除成功！");
+              this.getDomainZone();
+            }else{
+              this.$message.error("删除失败，请联系管理员！")
+            }
+          })
+        },
+        getCDNAccount(){
+          var form = new FormData();
+          form.append("table","cdnaccount")
+          this.postInfo("/admin/domain/", form, res => {
+            this.cdnAccount = res;
+          })
+        },
+        addCdnAccount(){
+          this.disabled = true
+          var form = new FormData();
+          for(var key in this.cdnAccountForm){
+            form.append(key, this.cdnAccountForm[key])
+          }
+          form.append("table", "cdnaccount")
+          this.$message.success("添加请求提交成功！")
+          this.postInfo("/admin/domain/add", form, res => {
+            if(res == "success"){
+              this.$message.success("添加成功！")
+              this.getCDNAccount();
+              this.closeDialog();
+            }else{
+              this.$message.error("添加失败，请联系管理员！")
+              setTimeout(() => {
+                this.disabled = false
+              }, 200);
+            }
+          })
+        },
+        getZoneInfo(){
+          var form = new FormData();
+          form.append("table","zoneinfo")
+          this.postInfo("/admin/domain/", form, res => {
+            this.zoneInfo = res
+          })
+        },
+        addZoneInfo(){
+          this.disabled = true
+          var form = new FormData();
+          if(!this.zoneInfoForm.project || !this.zoneInfoForm.nginx){
+            this.$message.error("请选择 Nginx 配置！")
+            return 
+          }
+          for(var key in this.zoneInfoForm){
+            form.append(key, this.zoneInfoForm[key])
+          }
+          form.append("table", "zoneinfo")
+          this.$message.success("添加请求提交成功！")
+          this.postInfo("/admin/domain/add", form, res => {
+            if(res == "success"){
+              this.$message.success("添加成功！")
+              this.getZoneInfo();
+              this.closeDialog();
+            }else{
+              this.$message.error("添加失败，请联系管理员！")
+              setTimeout(() => {
+                this.disabled = false
+              }, 200);
+            }
+          })
+        },
+        getNginxDomain(){
+          var form = new FormData();
+          form.append("table", "project");
+          this.postInfo("/admin/domain/", form, res => {
+            this.nginxProject = res
+          })
+        },
+        changeNginxSelect(){
+          var form = new FormData();
+          form.append("project", this.zoneInfoForm.project);
+          this.postInfo("/admin/domain/", form, res => {
+            this.zoneInfoForm.nginx = res
+          })
+        },
+        getSiteInfo(){
+          var form = new FormData();
+          form.append("table","siteinfo")
+          this.postInfo("/admin/domain/", form, res => {
+            this.siteInfo = res;
+          })
+        },
+        addSiteInfo(){
+          this.disabled = true
+          var form = new FormData();
+          for(var key in this.siteInfoForm){
+            form.append(key, this.siteInfoForm[key])
+          }
+          form.append("table", "siteinfo")
+          this.$message.success("添加请求提交成功！")
+          this.postInfo("/admin/domain/add", form, res => {
+            if(res == "success"){
+              this.$message.success("添加成功！")
+              this.getSiteInfo();
+              this.closeDialog();
+            }else{
+              this.$message.error("添加失败，请联系管理员！")
+              setTimeout(() => {
+                this.disabled = false
+              }, 200);
+            }
+          })
+        },
+        getDomainCDN(){
+          var form = new FormData();
+          form.append("table", "domain");
+          this.postInfo("/admin/domain/", form, res => {
+            this.domainCDN = res;
+          })
+        },
+        isValidIP(ip) {
+          var reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
+          return reg.test(ip);
+        },
+        addDomainCDN(){
+          this.disabled = true;
+          var form = new FormData();
+          if(!this.isValidIP(this.domainCDNForm.ipaddress)){
+            this.$message.error(`IP 填写错误！`)
+            return
+          }
+          for(var key in this.domainCDNForm){
+            if(!this.domainCDNForm[key] && key != 'proxy'){
+              this.$message.error(`${ key } 字段不能为空！`)
+              return 
+            }
+            form.append(key, this.domainCDNForm[key])
+          }
+          this.$message.success("添加请求提交成功！")
+          this.postInfo("/admin/domain/adddns", form, res => {
+            if(res == "success"){
+              this.$message.success("添加成功！")
+              this.getDomainCDN();
+              this.closeDialog();
+            }else{
+              this.$message.error("添加失败，请联系管理员！")
+              setTimeout(() => {
+                this.disabled = false
+              }, 200);
+            }
+          })
+        },
+        editDomainCDN(row){
+          this.disabled = true;
+          var form = new FormData();
+
+          if(this.domainCDNIsBulk){
+            row.id = this.domainCDNForm.zoneinfoid;
+            row.modifyip = this.domainCDNForm.ipaddress;
+            row.proxy = true
+          }
+
+          if(!this.isValidIP(row.modifyip)){
+            this.$message.error(`IP 填写错误！`)
+            return
+          }
+          form.append(this.domainCDNIsBulk ? "zoneinfoid" : "domainid", row.id)
+          form.append("ipaddress", row.modifyip)
+          form.append("proxy", row.proxy)
+          this.$message.success("修改请求提交成功！")
+          this.postInfo("/admin/domain/editdns", form, res => {
+            if(res == "success"){
+              this.$message.success("修改成功！")
+              this.getDomainCDN();
+              this.closeDialog();
+            }else{
+              this.$message.error("修改失败，请联系管理员！")
+              setTimeout(() => {
+                this.disabled = false
+              }, 200);
+            }
+          })
+        },
+        switchProxy(row, isProxy){
+          this.disabled = true;
+          var form = new FormData();
+          if(!this.isValidIP(row.newip)){
+            this.$message.error(`IP 填写错误！`)
+            return
+          }
+          form.append("domainid", row.id)
+          form.append("ipaddress", row.newip)
+          form.append("proxy", isProxy)
+          this.$message.success("更改代理状态提交成功！")
+          this.postInfo("/admin/domain/editdns", form, res => {
+            if(res == "success"){
+              this.$message.success("更改代理成功！")
+              this.getDomainCDN();
+              this.closeDialog();
+            }else{
+              this.$message.error("更改失败，请联系管理员！")
+              setTimeout(() => {
+                this.disabled = false
+              }, 200);
+            }
+          })
+        },
+        delDomainCDN(id){
+          var form = new FormData();
+          form.append("domainid", id)
+          this.$message.success("删除请求提交成功！")
+          this.postInfo("/admin/domain/deldns", form, res => {
+            if(res == "success"){
+              this.$message.success("删除成功！")
+              this.getDomainCDN();
+            }else{
+              this.$message.error("删除失败，请联系管理员！")
+            }
+          })
+        },
+        closeDialog(){
+          for(var key in this.siteInfoForm){
+            this.siteInfoForm[key] = ""
+          }
+          for(var key in this.zoneInfoForm){
+            this.zoneInfoForm[key] = ""
+          }
+          for(var key in this.cdnAccountForm){
+            this.cdnAccountForm[key] = ""
+          }
+          for(var key in this.domainZoneForm){
+            this.domainZoneForm[key] = ""
+          }
+          for(var key in this.domainCDNForm){
+            this.domainCDNForm[key] = ""
+          }
+          this.domainCDNDialogTableVisible = false;
+          this.domainZoneDialogTableVisible = false;
+          this.cdnAccountDialogTableVisible = false;
+          this.zoneInfoDialogTableVisible = false;
+          this.siteInfoDialogTableVisible = false;
+          this.domainCDNIsBulk = false;
+
+        },
+        // ----
+        postInfo(url, form, callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "POST",
+            contentType: false,
+            processData: false,
+            "data": form,
+            success: res => {
+              callback(res)
+            }
+          })
+        },
+        getData(url,callback){
+          this.disabled = true
+          $.ajax({
+            "url": url,
+            "method": "GET",
+            contentType: false,
+            processData: false,
+            success: res => {
+              callback(res)
+            }
+          })
+        }
+      },
+    }
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app")
+  </script>
+</body>
+</html>
+
+

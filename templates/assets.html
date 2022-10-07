@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assets</title>
+  {% include "head.html" %}
+</head>
+<style>
+  .btn.btn-primary {
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 18px;
+    background-color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  body,
+  html {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  #app,
+  .el-container,
+  .el-menu {
+    height: 100%;
+  }
+
+  .desktop {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    width: 100%;
+    height: 184px;
+    margin: 20px;
+    background-image: url("/static/image/layout.png");
+    background-position: center;
+    background-size: 100% auto;
+    background-repeat: no-repeat;
+  }
+
+  .no-show {
+    opacity: 0;
+  }
+
+  .location {
+    position: relative;
+    text-align: center;
+  }
+
+  .username {
+    position: absolute;
+  }
+
+  .is-white {
+    padding: 4px 9px;
+    background-color: white;
+  }
+
+  .top-info {
+    bottom: 10px;
+    transform: translate(1px, 0);
+  }
+
+  .bottom-info {
+    top: 10px;
+    transform: translate(1px, 0);
+  }
+
+  .left-info {
+    right: 40%;
+    transform: translate(50%, 0);
+  }
+
+  .right-info {
+    left: 40%;
+    transform: translate(-50%, 0);
+  }
+
+  .layout {
+    width: 100%;
+    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(6, 15%);
+  }
+
+  .table-warp {
+    height: calc(100vh - 300px);
+  }
+</style>
+
+<body>
+<div id="app">
+  <el-container>
+    <el-aside :width="fold ? '200px' : '60px'">
+      {% include "menu.html" %}
+    </el-aside>
+    <el-container>
+      <el-header height="56px" style="display: flex;align-items: center;">
+        <div style="display: flex;justify-content: space-between;align-items: center;width: 100%;">
+          <el-page-header @back="openMenu" :title="fold ? '收起':'展开'" content="资产管理">
+            <template #icon>
+              <el-icon>
+                <svg v-if="!fold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"
+                     data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M128 192h768v128H128V192zm0 256h512v128H128V448zm0 256h768v128H128V704zm576-352 192 160-192 128V352z">
+                  </path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"
+                     data-v-152cbb9b="">
+                  <path fill="currentColor"
+                        d="M896 192H128v128h768V192zm0 256H384v128h512V448zm0 256H128v128h768V704zM320 384 128 512l192 128V384z">
+                  </path>
+                </svg>
+              </el-icon>
+            </template>
+          </el-page-header>
+          <form method="post" style="display: inline-block;" action="/loginout">
+            <button type="submit" class="btn btn-primary">注销</button>
+          </form>
+        </div>
+      </el-header>
+      <el-main height="">
+        <el-tabs v-model="active" type="card" tab-position="top" @tab-click="watchTabChange">
+          <el-tab-pane label="资产管理" name="assets">
+            <el-card shadow="always" :body-style="{ padding: '20px' }">
+              <div slot="header">
+                <el-row :gutter="0">
+                  <el-col :span="5">
+                    <span>资产目录</span>
+                    <el-button style="margin-left: 20px" type="primary" size="default"
+                               @click="setAssets(0)">新增
+                    </el-button>
+                    <el-button type="success" @click="exportExcel">导出Excel</el-button>
+                  </el-col>
+                  <el-col :span="2" :offset="5">
+                    <el-select v-model="search.usage" style="width: 100%;" placeholder="选择使用状态"
+                               clearable
+                               @clear="search.usage=''">
+                      <el-option label="使用中" :value="1"></el-option>
+                      <el-option label="未使用" :value="2"></el-option>
+                    </el-select>
+                  </el-col>
+                  <el-col :span="2" :offset="0">
+                    <el-input v-model="search.category" placeholder="搜索类别" clearable></el-input>
+                  </el-col>
+                  <el-col :span="2" :offset="0">
+                    <el-input v-model="search.brand" placeholder="搜索品牌" clearable></el-input>
+                  </el-col>
+                  <el-col :span="2" :offset="0">
+                    <el-input v-model="search.model" placeholder="搜索型号" clearable></el-input>
+                  </el-col>
+                  <el-col :span="2" :offset="0">
+                    <el-input v-model="search.sn" placeholder="搜索序列号" clearable></el-input>
+                  </el-col>
+                  <el-col :span="2" :offset="0">
+                    <el-input v-model="search.location" placeholder="搜索所在地点" clearable></el-input>
+                  </el-col>
+                  <el-col :span="2" :offset="0">
+                    <el-select v-model="search.chinesename" filterable placeholder="请选择使用人" clearable>
+                      <el-option v-for="item in pidList" :label="item.chinesename"
+                                 :value="item.chinesename"></el-option>
+                    </el-select>
+                  </el-col>
+                </el-row>
+              </div>
+              <div class="table-warp">
+                <br>
+                <el-table :data="
+              assets.filter(
+                data => (
+                  (!search.usage || data.usage == search.usage) && (!search.chinesename || data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase())) && (!search.location || data.location.toLowerCase().includes(search.location.toLowerCase())) && (!search.brand || data.brand.toLowerCase().includes(search.brand.toLowerCase())) && (!search.model || data.model.toLowerCase().includes(search.model.toLowerCase())) && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase())) && (!search.category || data.category.toLowerCase().includes(search.category.toLowerCase()))
+                )
+              ).slice((pageIndex - 1) * pagenum, pageIndex * pagenum )"
+                          border stripe size="small"
+                          height="100%"
+                >
+                  <el-table-column prop="index" width="60px"></el-table-column>
+                  <el-table-column prop="code" label="资产编码" width="100px"></el-table-column>
+                  <el-table-column prop="type" label="类型" width="100px"></el-table-column>
+                  <el-table-column prop="category" label="类别" width="100px"></el-table-column>
+                  <el-table-column prop="brand" label="品牌" width="100px"></el-table-column>
+                  <el-table-column prop="model" label="型号"></el-table-column>
+                  <el-table-column prop="sn" label="序列号"></el-table-column>
+                  <el-table-column prop="count" label="数量" width="50px"></el-table-column>
+                  <el-table-column prop="location" label="所在地点" width="80px"></el-table-column>
+                  <el-table-column label="使用情况" width="100px">
+                    <template #default="scope">
+                      <!--{% raw %}-->
+                      <el-tag v-if="scope.row.usage==1" type="success" effect="dark">使用中</el-tag>
+                      <el-tag v-else type="info" effect="dark">未使用</el-tag>
+                      <!--{% endraw %}-->
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="ctime" label="购买时间" :formatter="timeFormate" width="180px"></el-table-column>
+                  <el-table-column prop="utime" label="领用时间"
+                                   :formatter="timeFormate" width="180px"></el-table-column>
+                  <el-table-column prop="chinesename" label="使用人" width="80px"></el-table-column>
+                  <el-table-column prop="remark" label="备注" show-overflow-tooltip></el-table-column>
+                  <el-table-column label="操作" width="100px" fixed="right">
+                    <template #default="scope">
+                      <!--{% raw %}-->
+                      <el-button type="primary" size="default" @click="setAssets(1, scope.row)">
+                        修改
+                      </el-button>
+                      <!--{% endraw %}-->
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              <br>
+              <div style="text-align: right;">
+                <el-pagination
+                  style="float: left"
+                  background
+                  v-model:currentPage="pageIndex"
+                  @current-change="changeIndex"
+                  layout="prev, pager, next"
+                  :page-size="pagenum"
+                  :total="
+              assets.filter(
+                data => (
+                  (!search.usage || data.usage == search.usage)
+                    && (!search.chinesename || data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase()))
+                  && (!search.user || data.user.toLowerCase().includes(search.user.toLowerCase()))
+                  && (!search.location || data.location.toLowerCase().includes(search.location.toLowerCase()))
+                   && (!search.brand || data.brand.toLowerCase().includes(search.brand.toLowerCase()))
+                   && (!search.model || data.model.toLowerCase().includes(search.model.toLowerCase()))
+                   && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase()))
+                   && (!search.category || data.category.toLowerCase().includes(search.category.toLowerCase()))
+                )
+              ).length
+              ">
+                </el-pagination>
+                <!--{% raw %}-->
+                <div style="display: flex;flex-wrap: wrap;justify-content: flex-end">
+                  <div>
+                    总计:
+                    {{
+                    assets.filter(
+                    data => (
+                    (!search.usage || data.usage == search.usage) && (!search.chinesename ||
+                    data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase()))
+                    && (!search.user || data.user.toLowerCase().includes(search.user.toLowerCase()))
+                    && (!search.location ||
+                    data.location.toLowerCase().includes(search.location.toLowerCase()))
+                    && (!search.brand ||
+                    data.brand.toLowerCase().includes(search.brand.toLowerCase()))
+                    && (!search.model ||
+                    data.model.toLowerCase().includes(search.model.toLowerCase()))
+                    && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase()))
+                    && (!search.category ||
+                    data.category.toLowerCase().includes(search.category.toLowerCase()))
+                    )
+                    ).length
+                    }}&nbsp;&nbsp;
+                  </div>
+
+                  <div>
+                    使用中:
+                    {{
+                    assets.filter(
+                    data => (
+                    (!search.usage || data.usage == search.usage) &&
+                    (data.usage == 1)
+                    && (!search.user || data.user.toLowerCase().includes(search.user.toLowerCase()))&&
+                    (!search.chinesename || data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase()))
+                    && (!search.location ||
+                    data.location.toLowerCase().includes(search.location.toLowerCase()))
+                    && (!search.brand ||
+                    data.brand.toLowerCase().includes(search.brand.toLowerCase()))
+                    && (!search.model ||
+                    data.model.toLowerCase().includes(search.model.toLowerCase()))
+                    && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase()))
+                    && (!search.category ||
+                    data.category.toLowerCase().includes(search.category.toLowerCase()))
+                    )
+                    ).length
+                    }}&nbsp;&nbsp;
+                  </div>
+
+                  <div>
+                    未使用:
+                    {{
+                    assets.filter(
+                    data => (
+                    (!search.usage || data.usage == search.usage) &&
+                    (data.usage == 2)
+                    && (!search.user || data.user.toLowerCase().includes(search.user.toLowerCase()))&&
+                    (!search.chinesename || data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase()))
+                    && (!search.location ||
+                    data.location.toLowerCase().includes(search.location.toLowerCase()))
+                    && (!search.brand ||
+                    data.brand.toLowerCase().includes(search.brand.toLowerCase()))
+                    && (!search.model ||
+                    data.model.toLowerCase().includes(search.model.toLowerCase()))
+                    && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase()))
+                    && (!search.category ||
+                    data.category.toLowerCase().includes(search.category.toLowerCase()))
+                    )
+                    ).length
+                    }}&nbsp;&nbsp;
+                  </div>
+
+                  <div>
+                    大厅:
+                    {{
+                    assets.filter(
+                    data => (
+                    (!search.usage || data.usage == search.usage)
+                    && (!search.user || data.user.toLowerCase().includes(search.user.toLowerCase()))&&
+                    (!search.chinesename || data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase()))
+                    && (!search.location ||
+                    data.location.toLowerCase().includes(search.location.toLowerCase()))
+                    && (data.location.toLowerCase().includes("大厅"))
+                    && (!search.brand ||
+                    data.brand.toLowerCase().includes(search.brand.toLowerCase()))
+                    && (!search.model ||
+                    data.model.toLowerCase().includes(search.model.toLowerCase()))
+                    && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase()))
+                    && (!search.category ||
+                    data.category.toLowerCase().includes(search.category.toLowerCase()))
+                    )
+                    ).length
+                    }}&nbsp;&nbsp;
+                  </div>
+
+                  <div>
+                    仓库:
+                    {{
+                    assets.filter(
+                    data => (
+                    (!search.usage || data.usage == search.usage)
+                    && (!search.user || data.user.toLowerCase().includes(search.user.toLowerCase()))
+                    && (!search.chinesename ||
+                    data.chinesename.toLowerCase().includes(search.chinesename.toLowerCase()))
+                    && (!search.location ||
+                    data.location.toLowerCase().includes(search.location.toLowerCase()))
+                    && (data.location.toLowerCase().includes("仓库"))
+                    && (!search.brand ||
+                    data.brand.toLowerCase().includes(search.brand.toLowerCase()))
+                    && (!search.model ||
+                    data.model.toLowerCase().includes(search.model.toLowerCase()))
+                    && (!search.sn || data.sn.toLowerCase().includes(search.sn.toLowerCase()))
+                    && (!search.category ||
+                    data.category.toLowerCase().includes(search.category.toLowerCase()))
+                    )
+                    ).length
+                    }}
+                  </div>
+                </div>
+                <!--{% endraw %}-->
+              </div>
+            </el-card>
+          </el-tab-pane>
+          <el-tab-pane label="书籍管理" name="books">
+            <el-card shadow="always" :body-style="{ padding: '20px' }">
+              <!--              头部-->
+              <div slot="header">
+                <el-row>
+                  <el-col :span="5">
+                    <span>书籍目录</span>
+                    <el-button style="margin-left: 20px" type="primary" size="default"
+                               @click="isBooksAdd=true;showBooksForm=true">新增
+                    </el-button>
+                    <el-button type="success" @click="booksExportExcel">导出Excel</el-button>
+                  </el-col>
+                  <el-col :span="3" :offset="7">
+                    <el-input v-model="booksSearchForm.name" placeholder="请输入书籍名称" clearable></el-input>
+                  </el-col>
+                  <el-col :span="3">
+                    <el-input v-model="booksSearchForm.sn" placeholder="请输入书籍编号" clearable></el-input>
+                  </el-col>
+                  <el-col :span="3">
+                    <el-input v-model="booksSearchForm.status" placeholder="请输入书籍状态" clearable></el-input>
+                  </el-col>
+                  <el-col :span="3">
+                    <el-select v-model="booksSearchForm.chinesename" filterable placeholder="请选择借阅人" clearable
+                               style="width: 100%">
+                      <el-option v-for="item in pidList" :label="item.chinesename"
+                                 :value="item.chinesename"></el-option>
+                    </el-select>
+                  </el-col>
+                </el-row>
+              </div>
+              <!--书籍信息列表-->
+              <div class="table-warp">
+                <br>
+                <el-table
+                  :data="handleBooksList.slice((this.booksPageIndex-1)*this.pagenum,this.booksPageIndex*this.pagenum)"
+                  style="width: 100%;"
+                  border stripe size="small"
+                  tooltip-effect="light"
+                  height="100%"
+                >
+                  <el-table-column prop="index" width="60px"></el-table-column>
+                  <el-table-column prop="name" label="书名" width="300px"></el-table-column>
+                  <el-table-column prop="type" label="类名" width="100px"></el-table-column>
+                  <el-table-column prop="author" label="作者"></el-table-column>
+                  <el-table-column prop="press" label="出版社" width="150px"></el-table-column>
+                  <el-table-column prop="sn" label="书籍编号"></el-table-column>
+                  <el-table-column prop="number" label="数量" width="50px"></el-table-column>
+                  <el-table-column prop="unit" label="单位" width="50px"></el-table-column>
+                  <el-table-column prop="source" label="购买金额来源" width="100px"></el-table-column>
+                  <el-table-column prop="mender" label="推荐人" width="60px"></el-table-column>
+                  <el-table-column prop="buytime" label="购买日期" :formatter="timeFormate2"
+                                   width="100px"></el-table-column>
+                  <el-table-column prop="cost" label="单价" width="50px"></el-table-column>
+                  <el-table-column prop="utime" label="借阅时间" :formatter="timeFormate2" width="100px"></el-table-column>
+                  <el-table-column prop="gtime" label="归还时间" :formatter="timeFormate2" width="100px"></el-table-column>
+                  <el-table-column prop="status" label="状态" width="100px"></el-table-column>
+                  <el-table-column prop="remark" label="备注"></el-table-column>
+                  <el-table-column prop="chinesename" label="借阅人" width="80px"></el-table-column>
+                  <el-table-column label="操作" width="80px" fixed="right">
+                    <template #default="scope">
+                      <!--{% raw %}-->
+                      <el-button type="primary" size="default" @click="handleEditBooks(scope.row,scope.column)">
+                        修改
+                      </el-button>
+                      <!--{% endraw %}-->
+                    </template>
+                  </el-table-column>
+                </el-table>
+
+              </div>
+              <br>
+              <!--书籍分页器-->
+              <el-row>
+                <!--书籍分页器-->
+                <el-col :span="12">
+
+                  <el-pagination style="float: left"
+                                 background
+                                 :currentPage="booksPageIndex"
+                                 layout="prev, pager, next"
+                                 :page-size="pagenum"
+                                 :total="handleBooksList.length"
+                                 @current-change="changeBooksIndex"
+                  >
+                  </el-pagination>
+
+                </el-col>
+                <!--书籍总计-->
+                <!--{% raw %}-->
+                <el-col :span="12" style="text-align: right">
+                  总计 ： {{ handleBooksList.length }}
+                </el-col>
+                <!--{% endraw %}-->
+              </el-row>
+            </el-card>
+          </el-tab-pane>
+        </el-tabs>
+
+        <el-dialog :title="setStatus ?'资产修改' : '资产新增'" v-model="showForm" width="50%">
+            <span>
+              <el-form :model="form" ref="form" :rules="rules" label-width="80px" :inline="false">
+                <el-form-item label="类型">
+                  <el-input v-model="form.type"></el-input>
+                </el-form-item>
+                 <el-form-item label="类别">
+                  <el-input v-model="form.category"></el-input>
+                </el-form-item>
+                <el-form-item label="品牌">
+                  <el-input v-model="form.brand"></el-input>
+                </el-form-item>
+                <el-form-item label="型号">
+                  <el-input v-model="form.model"></el-input>
+                </el-form-item>
+                <el-form-item label="序列号">
+                  <el-input v-model="form.sn"></el-input>
+                  <span style="color: #F56C6C;">戴尔品牌显示器填写 Service Tag</span>
+                </el-form-item>
+                <el-form-item label="数量">
+                  <el-input v-model="form.count"></el-input>
+                </el-form-item>
+                <el-form-item label="所在地点">
+                  <el-input v-model="form.location"></el-input>
+                </el-form-item>
+                <el-form-item label="使用情况">
+                  <el-radio v-model="form.usage" :label="2" size="large">未使用</el-radio>
+                  <el-radio v-model="form.usage" :label="1" size="large">使用中</el-radio>
+                </el-form-item>
+                <el-form-item label="购买时间">
+                  <el-date-picker v-model="form.ctime" type="datetime" placeholder="选择购买时间">
+                  </el-date-picker>
+                </el-form-item>
+                <el-form-item label="领用时间">
+                  <el-date-picker v-model="form.utime" type="datetime" placeholder="选择领用时间">
+                  </el-date-picker>
+                </el-form-item>
+                <el-form-item label="资产编码">
+                  <el-input v-model="form.code"></el-input>
+                </el-form-item>
+                <el-form-item label="使用人">
+                   <el-select v-model="form.pid" filterable placeholder="请选择使用人" clearable>
+                    <el-option v-for="item in pidList" :label="item.chinesename" :value="item.id"></el-option>
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="备注">
+                  <el-input v-model="form.remark"></el-input>
+                </el-form-item>
+                <el-form-item>
+                  <!--{% raw %}-->
+                  <el-button type="primary" :disabled="isHidden" @click="onSubmit">{{setStatus ? "确定修改" : "确定新增"}}
+                  </el-button>
+                  <!--{% endraw %}-->
+                  <el-button @click="showForm = false">取消</el-button>
+                </el-form-item>
+              </el-form>
+
+            </span>
+        </el-dialog>
+
+        <!-- 修改书籍信息弹窗 -->
+        <el-dialog :title="isBooksAdd ? '书籍新增' : '书籍修改'" v-model="showBooksForm" @close="closeBooksDialog"
+                   @open="openBooksDialog">
+          <el-form :model="booksForm" ref="booksDialog" :inline="false" label-position="right">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="书名" prop="name">
+                  <el-input v-model="booksForm.name"></el-input>
+                </el-form-item>
+                <el-form-item label="类型" prop="type">
+                  <el-input v-model="booksForm.type"></el-input>
+                </el-form-item>
+                <el-form-item label="作者" prop="author">
+                  <el-input v-model="booksForm.author"></el-input>
+                </el-form-item>
+                <el-form-item label="出版社" prop="press">
+                  <el-input v-model="booksForm.press"></el-input>
+                </el-form-item>
+                <el-form-item label="书籍编号" prop="sn">
+                  <el-input v-model="booksForm.sn"></el-input>
+                </el-form-item>
+                <el-form-item label="数量" prop="number">
+                  <el-input v-model="booksForm.number"></el-input>
+                </el-form-item>
+                <el-form-item label="单位" prop="unit">
+                  <el-input v-model="booksForm.unit"></el-input>
+                </el-form-item>
+                <el-form-item label="购买金额来源" prop="source">
+                  <el-input v-model="booksForm.source"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="推荐人" prop="mender">
+                  <el-input v-model="booksForm.mender"></el-input>
+                </el-form-item>
+                <el-form-item label="购买日期" prop="buytime">
+                  <!--                  <el-input"></el-input>-->
+                  <el-date-picker v-model="booksForm.buytime" type="date" placeholder="选择购买日期" format="YYYY/MM/DD"
+                                  value-format="YYYY-MM-DD">
+                  </el-date-picker>
+                </el-form-item>
+                <el-form-item label="单价" prop="cost">
+                  <el-input v-model="booksForm.cost"></el-input>
+                </el-form-item>
+                <el-form-item label="借阅时间" prop="utime">
+                  <el-date-picker v-model="booksForm.utime" type="date" placeholder="选择借阅时间" format="YYYY/MM/DD"
+                                  value-format="YYYY-MM-DD">
+                  </el-date-picker>
+                </el-form-item>
+                <el-form-item label="归还时间" prop="gtime">
+                  <el-date-picker v-model="booksForm.gtime" type="date" placeholder="选择归还时间" format="YYYY/MM/DD"
+                                  value-format="YYYY-MM-DD">
+                  </el-date-picker>
+                </el-form-item>
+                <el-form-item label="状态" prop="status">
+                  <el-input v-model="booksForm.status"></el-input>
+                </el-form-item>
+                <el-form-item label="备注" prop="remark">
+                  <el-input v-model="booksForm.remark"></el-input>
+                </el-form-item>
+                <el-form-item label="借阅人" prop="pid">
+                  <el-select v-model="booksForm.pid" filterable placeholder="请选择借阅人" clearable>
+                    <el-option v-for="item in pidList" :label="item.chinesename" :value="item.id"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+          <span class="dialog-footer">
+            <el-button @click="cancelBooksSubmit()">取消</el-button>
+            <!--{% raw %}-->
+                  <el-button type="primary" @click="submitBooksForm()">{{isBooksAdd ? "确定新增" : "确定修改"}}
+                  </el-button>
+            <!--{% endraw %}-->
+          </span>
+        </el-dialog>
+
+      </el-main>
+    </el-container>
+  </el-container>
+</div>
+<script type="module">
+  import export2Excel from '/static/js/exportExcel.js'
+
+  Date.prototype.format = function (fmt) {
+    var o = {
+      "M+": this.getMonth() + 1,                 //月份
+      "d+": this.getDate(),                    //日
+      "h+": this.getHours(),                   //小时
+      "m+": this.getMinutes(),                 //分
+      "s+": this.getSeconds(),                 //秒
+      "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+      "S": this.getMilliseconds()             //毫秒
+    };
+    if (/(y+)/.test(fmt)) {
+      fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    }
+    for (var k in o) {
+      if (new RegExp("(" + k + ")").test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+      }
+    }
+    return fmt;
+  }
+  const App = {
+    data() {
+      return {
+        current_page: "/assets",
+        fold: true,
+        showForm: false,
+        setStatus: 0,
+        rules: [],
+        isHidden: false,
+        active: "assets",
+        layout: [],
+        search: {
+          chinesename: '',
+          type: '',
+          brand: '',
+          model: '',
+          sn: '',
+          usage: '',
+          category: '',
+        },
+        index: 1,
+        pagenum: 20,
+        pageIndex: 1,
+        form: {
+          id: '',
+          pid: '',
+          type: '',
+          brand: '',
+          model: '',
+          sn: '',
+          count: '',
+          location: '',
+          usage: '',
+          ctime: '',
+          utime: '',
+          code: '',
+          remark: ''
+        },
+        header: [
+          {
+            name: "类型",
+            key: "type",
+          }, {
+            name: "类别",
+            key: "category",
+          }, {
+            name: "品牌",
+            key: "brand",
+          }, {
+            name: "型号",
+            key: "model",
+          }, {
+            name: "序列号",
+            key: "sn",
+          }, {
+            name: "数量",
+            key: "count",
+          }, {
+            name: "所在地点",
+            key: "location",
+          }, {
+            name: "使用情况",
+            key: "usage",
+          }, {
+            name: "购买时间",
+            key: "ctime",
+          }, {
+            name: "领用时间",
+            key: "utime",
+          }, {
+            name: "使用人",
+            key: "user",
+          }, {
+            name: "资产编码",
+            key: "code",
+          }, {
+            name: "备注",
+            key: "remark",
+          },],
+        booksHeader: [
+          {name: '书名', key: 'name'},
+          {name: '类型', key: 'type'},
+          {name: '作者', key: 'author'},
+          {name: '出版社', key: 'press'},
+          {name: '书籍编号', key: 'sn'},
+          {name: '数量', key: 'number'},
+          {name: '单位', key: 'unit'},
+          {name: '购买金额来源', key: 'source'},
+          {name: '推荐人', key: 'mender'},
+          {name: '购买日期', key: 'buytime'},
+          {name: '单价', key: 'cost'},
+          {name: '借阅时间', key: 'utime'},
+          {name: '归还时间', key: 'gtime'},
+          {name: '状态', key: 'status'},
+          {name: '借阅人', key: 'chinesename'},
+          {name: '备注', key: 'remark'},
+        ],
+        assets: [],
+        desktop: [],
+        setLayoutUserForm: false,
+        userInfo: {
+          id: '',
+          pid: '',
+          // user: '',
+          // post: '', // 岗位
+          // job: "", // 工作职责
+          // ctime: '', // 入职时间
+          // utime : '',//离职时间
+          // status: '' // 是否在职 1 在职 0 离职
+        },
+        position: [],
+        layoutPosition: [
+          [1, 2, 3, 0, 4, 5],
+          [6, 7, 0, 0, 0, 8],
+          [0, 0, 0, 0, 0, 9],
+        ],
+        //  书籍管理数据
+        booksSearchForm: {
+          name: '', //书名
+          sn: '',  //书籍编号
+          status: '',  //书籍状态
+          chinesename: "", //借阅人
+        },
+        isBooksAdd: false,//是否为新增操作
+        booksList: [],//书籍总列表
+        pidList: [], //借阅人列表
+        booksTableList: [],//书籍表格中显示数据
+        booksPageIndex: 1,//书籍管理当前页码
+        showBooksForm: false,//控制书籍弹窗显示
+        booksForm: {
+          name: '',
+          type: '',
+          author: '',
+          press: '',
+          sn: '',
+          number: '',
+          unit: '',
+          source: '',
+          mender: '',
+          buytime: '',
+          cost: '',
+          utime: '',
+          gtime: '',
+          status: '',
+          remark: '',
+          pid: '',
+        },//书籍表单
+        booksRules: {},//表单验证规则
+
+      }
+    },
+    mounted() {
+      this.getAssets();
+      this.getBooksList();
+      this.getPidList();
+      this.$watch(() => [this.search], (v1, v2) => {
+          this.pageIndex = 1;
+          console.log('kk' + this.pageIndex)
+        },
+        {
+          deep: true // 深度监听的参数
+        })
+    },
+    computed: {
+      //书籍表格数据变化监听
+      handleBooksList() {
+        return this.booksList.filter(item => {
+          return (!this.booksSearchForm.name || item.name.toLowerCase().trim().includes(this.booksSearchForm.name.trim().toLowerCase()))
+            && (!this.booksSearchForm.sn || item.sn.toLowerCase().trim().includes(this.booksSearchForm.sn.trim().toLowerCase()))
+            && (!this.booksSearchForm.status || item.status.toLowerCase().trim().includes(this.booksSearchForm.status.trim().toLowerCase()))
+            && (!this.booksSearchForm.chinesename || item.chinesename == this.booksSearchForm.chinesename)
+        });
+      }
+    },
+    methods: {
+      clickMenu(index) {
+        if (window.location.pathname != index) {
+          window.location.href = index
+        }
+      },
+      openMenu() {
+        this.fold = !this.fold
+      },
+      exportExcel() {
+        let header = this.header.map((item, index) => {
+          return item.name;
+        })
+        let tBody = [];
+        this.assets.map(item => {
+          tBody.push({});
+        })
+        for (let i = 0; i < this.header.length; i++) {
+          if (this.header[i].key == 'ctime' || this.header[i].key == 'utime') {
+            this.assets.map((item, index) => {
+              if (item[this.header[i].key]) {
+                tBody[index][this.header[i].key] = new Date(item[this.header[i].key]).format("yyyy-MM-dd hh:mm:ss");
+              } else {
+                tBody[index][this.header[i].key] = '';
+              }
+            })
+          } else if (this.header[i].key == 'usage') {
+            this.assets.map((item, index) => {
+              tBody[index][this.header[i].key] = item[this.header[i].key] == 0 ? '未使用' : '使用中'
+            })
+          } else if (this.header[i].key == 'count') {
+            this.assets.map((item, index) => {
+              tBody[index][this.header[i].key] = item[this.header[i].key] ? item[this.header[i].key] : ''
+            })
+          } else {
+            this.assets.map((item, index) => {
+              tBody[index][this.header[i].key] = item[this.header[i].key]
+            })
+          }
+        }
+        export2Excel(header, tBody, '资产表');
+      },
+      booksExportExcel() {
+        let header = this.booksHeader.map((item, index) => {
+          return item.name;
+        })
+        let tBody = [];
+        this.booksList.map(item => {
+          tBody.push({});
+        })
+        //处理表格数据
+        for (let i = 0; i < this.booksHeader.length; i++) {
+          if (this.booksHeader[i].key == 'utime' || this.booksHeader[i].key == 'gtime' || this.booksHeader[i].key == 'buytime') {
+            this.booksList.map((item, index) => {
+              if (item[this.booksHeader[i].key]) {
+                tBody[index][this.booksHeader[i].key] = new Date(item[this.booksHeader[i].key]).format("yyyy-MM-dd");
+              } else {
+                tBody[index][this.booksHeader[i].key] = '';
+              }
+            })
+          } else {
+            this.booksList.map((item, index) => {
+              tBody[index][this.booksHeader[i].key] = item[this.booksHeader[i].key]
+            })
+          }
+        }
+        export2Excel(header, tBody, '书籍表');
+      },
+      changeIndex(index) {
+        this.pageIndex = index;
+      },
+      setAssets(status, value) {
+        for (var key in this.form) {
+          this.form[key] = ""
+        }
+        this.showForm = true;
+        this.setStatus = status;
+        console.log(value)
+
+        if (status) {
+          this.form = JSON.parse(JSON.stringify(value))
+        }
+      },
+      timeFormate(row, column, cellValue, index) {
+        if (row[column.property]) {
+          return new Date(row[column.property]).format("yyyy-MM-dd hh:mm:ss")
+        } else {
+          return ""
+        }
+      },
+      timeFormate2(row, column, cellValue, index) {
+        if (row[column.property]) {
+          return new Date(row[column.property]).format("yyyy-MM-dd")
+        } else {
+          return ""
+        }
+      },
+      onSubmit() {
+        var pushform = new FormData()
+        for (var key in this.form) {
+          if (key.indexOf('time') != -1 && this.form[key]) {
+            pushform.append(key, new Date(this.form[key]).format("yyyy-MM-dd hh:mm:ss"))
+          } else {
+            pushform.append(key, this.form[key])
+          }
+
+        }
+        if (this.isHidden) {
+          return
+        }
+        this.isHidden = true;
+        this.postInfo("/assets/update", pushform, res => {
+          if (res == "success") {
+            this.showForm = false;
+            this.isHidden = false;
+            this.$message.success(!this.setStatus ? "新增成功" : "修改成功")
+            this.getAssets();
+          } else {
+            this.$message.error("操作失败，联系管理员！")
+          }
+
+        })
+      },
+      getAssets() {
+        let form = new FormData()
+        form.append("select", "select")
+        this.postInfo('/assets/', form, res => {
+          if (res) {
+            res.forEach((item, index) => {
+              item.index = index + 1;
+              item.ctime += '+0800'
+              item.utime += '+0800'
+              for (let key in item) {
+                if (!item[key]) {
+                  item[key] = ''
+                }
+              }
+            })
+            this.assets = res
+            console.log(res)
+          } else {
+            this.$message.error("请求失败，请联系管理员！")
+          }
+        })
+      },
+
+      //获取书籍列表
+      getBooksList() {
+        let form = new FormData()
+        form.append('select', 'book')
+        form.append('get', 'data')
+        this.postInfo('/assets/book', form, res => {
+          if (res) {
+            res.forEach((item, index) => {
+              item.index = index + 1;
+              for (let key in item) {
+                if (!item[key]) {
+                  item[key] = ''
+                }
+              }
+            })
+            this.booksList = res;
+          }
+        })
+      },
+      //获取借阅人列表
+      getPidList() {
+        let form = new FormData()
+        form.append('select', 'person')
+        this.postInfo("/assets/", form, res => {
+          console.log(res)
+          this.pidList = res;
+        })
+      },
+      //改变页码
+      changeBooksIndex(page) {
+        this.booksPageIndex = page
+      },
+      //书籍表单打开
+      openBooksDialog() {
+        //新增：设当天为默认后买日期
+        if (this.isBooksAdd) {
+          let nowTime = new Date().format("yyyy-MM-dd")
+          this.booksForm.buytime = nowTime;
+        }
+      },
+      //书籍表单取消
+      cancelBooksSubmit() {
+        this.showBooksForm = false;
+        // this.closeBooksDialog();
+      },
+      //书籍表单关闭
+      closeBooksDialog() {
+        //置空表单
+        for (let k in this.booksForm) {
+          this.booksForm[k] = "";
+        }
+      },
+      //书籍表单提交
+      submitBooksForm() {
+        //获取当天时间
+        let nowTime = new Date().format("yyyy-MM-dd")
+        //若时间为空 默认设为当天时间
+        if (!this.booksForm.buytime) {
+          this.booksForm.buytime = nowTime;
+        }
+
+        if (this.booksForm.gtime == null) {
+          this.booksForm.gtime = '';
+        }
+        if (this.booksForm.utime == null) {
+          this.booksForm.utime = '';
+        }
+        delete this.booksForm.index
+        var pushform = new FormData()
+        if (this.isBooksAdd) {
+          delete this.booksForm.bid
+        }
+        for (let key in this.booksForm) {
+          if (key == 'chinesename') {
+            continue
+          }
+          pushform.append(key, this.booksForm[key])
+        }
+        pushform.append("select", "book")
+        this.postInfo("/assets/book/update", pushform, res => {
+          if (res == "success") {
+            this.showBooksForm = false;
+            this.$message.success(this.isBooksAdd ? "新增成功" : "修改成功")
+            this.getBooksList();
+          } else {
+            this.$message.error("操作失败，联系管理员！")
+          }
+        })
+      },
+      //书籍编辑
+      handleEditBooks(value) {
+        this.isBooksAdd = false;
+        //格式化时间
+        console.log(value)
+        this.showBooksForm = true
+        delete this.booksForm.id
+        this.booksForm = JSON.parse(JSON.stringify(value));
+        //格式化时间
+        if (this.booksForm.utime) {
+          this.booksForm.utime = new Date(value.utime).format("yyyy-MM-dd")
+        }
+        if (this.booksForm.gtime) {
+          this.booksForm.gtime = new Date(value.gtime).format("yyyy-MM-dd")
+        }
+        if (this.booksForm.buytime) {
+          this.booksForm.buytime = new Date(value.buytime).format("yyyy-MM-dd")
+        }
+        this.booksForm.bid = this.booksForm.id
+        delete this.booksForm.id
+      },
+      postInfo(url, form, callback) {
+        $.ajax({
+          "url": url,
+          "method": "POST",
+          contentType: false,
+          processData: false,
+          "data": form,
+          success: res => {
+            callback(res)
+          }
+        })
+      },
+    }
+  }
+  const app = Vue.createApp(App);
+  app.use(ElementPlus);
+  app.mount("#app")
+</script>
+</body>
+
+</html>
