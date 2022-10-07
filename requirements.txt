@@ -1,0 +1,11 @@
+Flask==1.1.4
+Flask_uWSGI_WebSocket==0.6.1
+gevent==21.8.0
+gevent_websocket==0.10.1
+ldap3==2.9.1
+paramiko==2.8.0
+Pillow==9.1.0
+PyMySQL==1.0.2
+requests==2.26.0
+six==1.16.0
+Werkzeug==1.0.1
